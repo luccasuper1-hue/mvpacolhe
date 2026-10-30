@@ -14,6 +14,7 @@ export default function InvitePage() {
   const [confirm, setConfirm] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [roleTermsAccepted, setRoleTermsAccepted] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -26,7 +27,7 @@ export default function InvitePage() {
     if (password !== confirm) { setError("As senhas não coincidem."); return; }
     setBusy(true); setError("");
     try {
-      await api.post(`/auth/invite/${token}/accept`, { password, terms_accepted: termsAccepted, privacy_accepted: privacyAccepted });
+      await api.post(`/auth/invite/${token}/accept`, { password, terms_accepted: termsAccepted, privacy_accepted: privacyAccepted, role_terms_accepted: roleTermsAccepted });
       await refresh();
       navigate("/profissional", { replace: true });
     } catch (err) { setError(apiError(err)); } finally { setBusy(false); }
@@ -54,8 +55,10 @@ export default function InvitePage() {
             </label>
             <label className="mvp-check"><input type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} /> <span>Li e aceito os <Link to="/termos">termos do piloto</Link>.</span></label>
             <label className="mvp-check"><input type="checkbox" checked={privacyAccepted} onChange={e => setPrivacyAccepted(e.target.checked)} /> <span>Li a <Link to="/privacidade">política de privacidade</Link>.</span></label>
+            {invite.role === "professional" && <label className="mvp-check"><input type="checkbox" checked={roleTermsAccepted} onChange={e => setRoleTermsAccepted(e.target.checked)} /> <span>Li e aceito o termo de confidencialidade, sigilo profissional e não redistribuição de dados.</span></label>}
+            {invite.role === "institution" && <label className="mvp-check"><input type="checkbox" checked={roleTermsAccepted} onChange={e => setRoleTermsAccepted(e.target.checked)} /> <span>Li e aceito o termo de responsabilidade da instituição sobre acesso, finalidade e proteção dos dados.</span></label>}
             {error && <div className="mvp-error" data-testid="invite-error">{error}</div>}
-            <button className="button primary full" disabled={busy || !termsAccepted || !privacyAccepted} data-testid="invite-submit-button">
+            <button className="button primary full" disabled={busy || !termsAccepted || !privacyAccepted || (["professional", "institution"].includes(invite.role) && !roleTermsAccepted)} data-testid="invite-submit-button">
               {busy ? "Ativando…" : "Ativar minha conta"} <ArrowRight size={16} />
             </button>
           </form>

@@ -14,7 +14,7 @@ O piloto atual usa Cloudflare Workers/Assets, MongoDB Atlas e autenticação por
 | Alta | O frontend duplicava o JWT em `localStorage`, aumentando o impacto de XSS. | Removido; a sessão web usa o cookie `HttpOnly` emitido pelo Worker. |
 | Alta | Não há fluxo de acesso, correção, eliminação, portabilidade ou revogação de consentimento para titulares. | Pendente de desenho operacional e implementação. |
 | Alta | O titular não tinha uma forma técnica de consultar os dados da própria conta nem registrar um pedido de eliminação. | Parcialmente corrigido: `GET /api/auth/me/export` e `POST /api/auth/me/deletion-request` autenticados; ainda falta operação humana, correção, portabilidade e decisão de retenção. |
-| Alta | O cadastro precisa documentar exatamente quais documentos foram aceitos; não verifica idade nem consentimento/participação de responsável. | Parcialmente corrigido: termos e política agora têm aceites separados e versionados; uso de menores continua bloqueado até a instituição definir o processo. |
+| Alta | O cadastro precisa documentar exatamente quais documentos foram aceitos; não verifica idade nem consentimento/participação de responsável. | Parcialmente corrigido: termos e política agora têm aceites separados e versionados; convites de profissionais e instituições exigem termo específico; uso de menores continua bloqueado até a instituição definir o processo. |
 | Alta | Não há política de retenção, descarte, backup/restauração ou resposta a incidentes documentada. | Pendente; pedidos de direitos agora têm fila administrativa, mas a execução e os prazos ainda são operacionais. |
 | Alta | A política pública não identifica claramente controlador, operador, compartilhamentos, finalidades, bases legais e canal do encarregado. | Pendente de decisão jurídica/operacional; não inventar nomes, e-mails ou bases legais no produto. |
 | Alta | Sessões por cookie precisam impedir mutações disparadas por origem externa. | Corrigido nesta revisão: cookie `SameSite=Lax` no deploy unificado e validação de `Origin` para mutações autenticadas. |
@@ -47,6 +47,7 @@ O piloto atual usa Cloudflare Workers/Assets, MongoDB Atlas e autenticação por
 - O cadastro de estudante exige aceite separado dos termos e da política de privacidade e grava os horários e a versão apresentada.
 - O aceite de convite de profissional usa o mesmo registro versionado.
 - O painel administrativo possui uma fila autenticada de pedidos de direitos (`GET /api/admin/rights-requests`) e uma operação de resolução (`POST /api/admin/rights-requests/:id/resolve`). Essas rotas não executam eliminação automática, porque retenção e obrigações precisam ser avaliadas caso a caso.
+- Convites de profissionais exigem aceite explícito de confidencialidade, sigilo profissional e não redistribuição; convites de instituições exigem termo específico de responsabilidade sobre acesso e proteção dos dados.
 - O convite de profissional exige registro CRP informado pela instituição e marca o registro como não verificado até a conferência humana.
 
 ## Referências oficiais

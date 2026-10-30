@@ -202,8 +202,9 @@ async function authRoutes(request: Request, env: Env, pathname: string): Promise
     if (!user) return fail("Convite inválido ou já utilizado", 404);
     if (user.invite_expires_at && String(user.invite_expires_at) < now()) return fail("Convite expirado. Peça um novo à instituição.", 410);
     if (payload.terms_accepted !== true || payload.privacy_accepted !== true) return fail("É necessário aceitar os termos e a política de privacidade do piloto", 422);
+    if (["professional", "institution"].includes(String(user.role)) && payload.role_terms_accepted !== true) return fail("É necessário aceitar o termo específico do seu perfil", 422);
     const acceptedAt = now();
-    const changed = await store.update("users", { id: user.id, invite_token: acceptToken }, { $set: { password_hash: await hashPassword(payload.password), active: true, consent_accepted_at: acceptedAt, terms_accepted_at: acceptedAt, privacy_accepted_at: acceptedAt, legal_version: env.PILOT_LEGAL_VERSION || DEFAULT_LEGAL_VERSION }, $unset: { invite_token: "", invite_expires_at: "" } });
+    const changed = await store.update("users", { id: user.id, invite_token: acceptToken }, { $set: { password_hash: await hashPassword(payload.password), active: true, consent_accepted_at: acceptedAt, terms_accepted_at: acceptedAt, privacy_accepted_at: acceptedAt, role_terms_accepted_at: ["professional", "institution"].includes(String(user.role)) ? acceptedAt : null, legal_version: env.PILOT_LEGAL_VERSION || DEFAULT_LEGAL_VERSION }, $unset: { invite_token: "", invite_expires_at: "" } });
     if (changed !== 1) return fail("Convite inválido ou já utilizado", 404);
     await logEvent(env, "invite_accepted", user, user.institution_id);
     const accessToken = await createAccessToken({ sub: user.id, email: user.email, role: user.role }, env.JWT_SECRET);
