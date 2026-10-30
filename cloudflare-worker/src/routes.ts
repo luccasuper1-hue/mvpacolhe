@@ -354,8 +354,36 @@ async function adminRoutes(request: Request, env: Env, pathname: string): Promis
   return undefined;
 }
 
+async function testRoutes(request: Request, env: Env, pathname: string): Promise<Response | undefined> {
+  if (env.TEST_MODE !== "true" || !["/api/test/seed", "/api/test/ping"].includes(pathname) || request.method !== "POST") return undefined;
+  if (!env.TEST_SEED_SECRET || request.headers.get("x-test-seed-secret") !== env.TEST_SEED_SECRET) return fail("Não encontrado", 404);
+  if (pathname === "/api/test/ping") {
+    if (!env.TEST_GATEWAY_URL) return fail("Gateway ausente", 500);
+    const response = await fetch(env.TEST_GATEWAY_URL);
+    return json({ ok: response.ok, status: response.status });
+  }
+  const payload = await requestBody(request);
+  if (!payload || !Array.isArray(payload.institutions) || !Array.isArray(payload.users)) return fail("Fixture inválida", 422);
+  try {
+    const store = db(env);
+    for (const collection of ["users", "institutions", "students", "professionals", "availability", "requests", "sessions", "referrals", "feedback", "events", "login_attempts", "password_reset_tokens"]) await store.remove(collection, {}, true);
+    for (const institution of payload.institutions) await store.insert("institutions", { id: string(institution.id), name: string(institution.name), code: string(institution.code).toUpperCase(), contact_email: email(institution.contact_email) || null, plan: "test", created_at: now() });
+    for (const raw of payload.users) {
+      const role = string(raw.role), institutionId = raw.institution_id ? string(raw.institution_id) : undefined;
+      if (!oneOf(role, roles) || (role !== "admin" && !institutionId) || !email(raw.email) || !validPassword(raw.password)) return fail("Fixture inválida", 422);
+      const pending = Boolean(raw.invite_token);
+      const account = { id: string(raw.id) || id(), name: string(raw.name), email: email(raw.email), password_hash: pending ? "" : await hashPassword(raw.password), role, ...(institutionId ? { institution_id: institutionId } : {}), active: !pending, ...(pending ? { invite_token: string(raw.invite_token), invite_expires_at: string(raw.invite_expires_at) } : { terms_accepted_at: now(), privacy_accepted_at: now(), role_terms_accepted_at: ["professional", "institution"].includes(role) ? now() : null }), created_at: now() };
+      await store.insert("users", account);
+      if (role === "professional") await store.insert("professionals", { id: string(raw.profile_id) || id(), user_id: account.id, institution_id: institutionId, link_type: "institution", specialty: "Teste", crp_registration: "SYNTH-000", crp_verified: true, created_at: now(), last_access: null });
+    }
+    return json({ ok: true, institutions: await store.count("institutions"), users: await store.count("users") });
+  } catch (error) {
+    return fail(`Fixture de teste falhou: ${error instanceof Error ? error.message : String(error)}`, 500);
+  }
+}
+
 export async function apiRoute(request: Request, env: Env, pathname: string): Promise<Response> {
   if (pathname === "/api" || pathname === "/api/") return json({ service: "acolhe-mvp", status: "ok", runtime: "cloudflare-worker", pilot_enabled: pilotConfigured(env) });
-  for (const route of [authRoutes, studentRoutes, professionalRoutes, institutionRoutes, adminRoutes]) { const response = await route(request, env, pathname); if (response) return response; }
+  for (const route of [testRoutes, authRoutes, studentRoutes, professionalRoutes, institutionRoutes, adminRoutes]) { const response = await route(request, env, pathname); if (response) return response; }
   return fail("Não encontrado", 404);
 }

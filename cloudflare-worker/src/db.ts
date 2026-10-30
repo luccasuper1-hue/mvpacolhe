@@ -73,5 +73,23 @@ export class MongoGateway extends DurableObject<Env> {
 export type Mongo = Pick<MongoGateway, "findOne" | "findMany" | "insert" | "update" | "remove" | "count" | "distinct" | "findOneAndUpdate">;
 
 export function gateway(env: Env): Mongo {
+  if (env.TEST_MODE === "true" && env.TEST_GATEWAY_URL) return new ExternalTestGateway(env.TEST_GATEWAY_URL);
   return env.MONGO_GATEWAY.get(env.MONGO_GATEWAY.idFromName("acolhe-mongodb")) as unknown as Mongo;
+}
+
+class ExternalTestGateway implements Mongo {
+  constructor(private readonly endpoint: string) {}
+  private async call(op: string, body: RecordDoc) {
+    const response = await fetch(this.endpoint, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ op, ...body }) });
+    if (!response.ok) throw new Error(`external test gateway ${response.status}`);
+    return response.json();
+  }
+  findOne(collection: string, filter: RecordDoc, projection?: Record<string, 0 | 1>) { return this.call("findOne", { collection, filter, projection }) as Promise<RecordDoc | null>; }
+  findMany(collection: string, filter: RecordDoc, options: RecordDoc = {}) { return this.call("findMany", { collection, filter, options }) as Promise<RecordDoc[]>; }
+  insert(collection: string, value: RecordDoc) { return this.call("insert", { collection, value }).then(() => undefined); }
+  update(collection: string, filter: RecordDoc, update: RecordDoc, upsert = false) { return this.call("update", { collection, filter, update, upsert }) as Promise<number>; }
+  remove(collection: string, filter: RecordDoc, many = false) { return this.call("remove", { collection, filter, many }) as Promise<number>; }
+  count(collection: string, filter: RecordDoc = {}) { return this.call("count", { collection, filter }) as Promise<number>; }
+  distinct(collection: string, field: string, filter: RecordDoc = {}) { return this.call("distinct", { collection, field, filter }) as Promise<string[]>; }
+  findOneAndUpdate(collection: string, filter: RecordDoc, update: RecordDoc, projection?: Record<string, 0 | 1>) { return this.call("findOneAndUpdate", { collection, filter, update, projection }) as Promise<RecordDoc | null>; }
 }

@@ -1,39 +1,42 @@
-# Resultados da auditoria inicial
+# Resultados da Fase 2 — autorização e isolamento
 
-Data: 2026-10-30.
+Data: 2026-10-30  
+Branch: `audit/phase2-authz-isolation`  
+Escopo: somente ambiente local isolado; nenhum deploy e nenhum dado real.
 
-## Passaram
+## Backend Python
+
+Com Python 3.12 em `.venv312` e `PYTHONPATH=backend`:
+
+```text
+11 passed in 0.69s
+```
+
+Suítes executadas: `test_phase2_authorization.py`, `test_phase2_dynamic_isolation.py` e `test_auth_token_security.py`. O caso mínimo do travamento do event loop foi reproduzido no sandbox Windows; fora dele, Python 3.12 executou normalmente. A causa foi a criação de socketpair bloqueada pelo sandbox, não incompatibilidade do código.
+
+## Worker Cloudflare
+
+Wrangler executou o Worker local em `127.0.0.1:8798`. Um gateway HTTP local persistente em `127.0.0.1:8799` armazenou documentos sintéticos em arquivo JSON e implementou o contrato de operações do gateway Mongo usado pelo Worker.
+
+- `phase2-worker-dynamic.mjs`: **36 asserções aprovadas**.
+- Contas sintéticas: duas instituições, dois estudantes, dois profissionais, um administrador e um convite expirado.
+- Cobertura: autenticação real, isolamento de perfis/listas, solicitações, sessões, encaminhamento, feedback, métricas, convites, reset, tokens expirados/reutilizados, RBAC e tentativa de senha direta institucional.
+- Códigos relevantes: `403` para convite sem privilégio, `422` para senha direta, `404` para objeto de outra instituição e token de convite consumido, `410` para convite expirado, `400` para reset inválido/reutilizado.
+- `phase2-worker-pilot-disabled.mjs`: `/api` `200` com `pilot_enabled=false`, login `200`, mutação autenticada protegida `503`.
+
+O runner imprime apenas método, caminho redigido e status; tokens, senhas e dados pessoais não são registrados.
+
+## Validações de build
 
 - `npm run check` no Worker: passou.
-- `npm --prefix ../frontend run build`: passou; apenas aviso de bundle grande.
-- `wrangler deploy --dry-run`: passou em validação anterior, com aviso não bloqueante de log local EPERM.
-- API ao vivo `/api`: respondeu `status=ok`, `runtime=cloudflare-worker` e `pilot_enabled=false`.
-- Cadastro ao vivo exibe opções separadas de adulto/menor e aceite de responsável condicional.
-- Teste HTTP sintético de cadastro sem gate jurídico: retornou `503`, sem criar conta.
+- `node scripts/phase2-static-check.mjs`: passou.
+- `npm run build` no frontend: passou; somente aviso não bloqueante de bundle grande.
+- `npx wrangler deploy --dry-run`: passou; não realizou upload/deploy. Aviso não bloqueante de `whatwg-url`.
 
-## Ainda não executados
+## 17 testes legados ignorados
 
-- suíte automatizada de autorização por papel/instituição;
-- testes de IDOR/BOLA em ambiente isolado;
-- testes de rate limiting;
-- teste E2E de responsável e convite de profissional;
-- auditoria de dependências completa do monorepo;
-- teste de restauração/backup.
+`backend/tests/test_acolhe_audit.py` coletou **17 skipped** por ausência deliberada de URL/credenciais sintéticas. Os cenários equivalentes de isolamento, RBAC, convite e reset foram cobertos pelas suítes acima. Permanecem pendentes os testes de concorrência (aceite/cancelamento/duplo agendamento), negativos completos de consentimento, guard de link de sala e rate limiting HTTP sob carga; não foram executados contra produção.
 
-## Suíte Python legada
+## Decisão
 
-`pytest -q` na raiz falha na coleta sem `PYTHONPATH=backend` (`ModuleNotFoundError: app`). Com `PYTHONPATH=backend`, os testes são marcados como `skipped` porque exigem URL e credenciais de integração não fornecidas; não foram executados contra produção.
-
-Nenhum teste destrutivo ou alteração em dados reais foi executado.
-
-## Fase 2
-
-- `npm run check` no Worker: passou após as correções de autorização.
-- `npm run build` no frontend: passou; permanece apenas aviso de bundle grande.
-- `python -m compileall -q backend/app backend/tests`: passou.
-- Testes unitários Python de autorização/convite foram adicionados e coletados com sucesso.
-- A execução dos testes assíncronos Python não completou neste ambiente Windows/Python 3.13: `asyncio.run` bloqueia ao criar o event loop Proactor. Não há MongoDB isolado nem credenciais sintéticas de integração disponíveis. Nenhum teste foi executado contra produção.
-- O caso mínimo confirmou que o bloqueio era do sandbox ao criar o socketpair do event loop Windows, não uma incompatibilidade intrínseca do código. Um ambiente Python 3.12 isolado (`.venv312`, não versionado) foi criado e executado fora do sandbox.
-- `backend/tests/test_phase2_authorization.py`, `backend/tests/test_phase2_dynamic_isolation.py` e `backend/tests/test_auth_token_security.py`: **10 passed** no Python 3.12 isolado.
-- `backend/tests/test_acolhe_audit.py`: **17 skipped**, pois não recebeu endpoint nem credenciais sintéticas de integração.
-- Worker local via Wrangler (sem deploy): `/api` **200** com `pilot_enabled=false`; cadastro **503**; endpoints protegidos sem autenticação **401**. O acesso a dados autenticado do Worker não foi executado por falta de gateway MongoDB local.
+Os testes críticos de autorização e isolamento no backend Python e no Worker local passaram. A Fase 2 permanece **bloqueada para aprovação final**, pois os cenários legados de concorrência, rate limiting e guard de sala ainda não têm execução dinâmica equivalente. Nenhum risco foi mascarado por deploy ou por dados de produção.

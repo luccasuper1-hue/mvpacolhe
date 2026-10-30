@@ -31,7 +31,9 @@ Na revisão estática, as rotas de estudante/profissional usam o perfil derivado
 
 **Teste dinâmico executado:** `backend/tests/test_phase2_dynamic_isolation.py` criou dois estudantes, dois profissionais e duas instituições sintéticas em um banco em memória e executou os handlers reais. Resultado: 4 passed. Foram observados somente os próprios registros para cada instituição/perfil; o feedback de sessão da outra instituição retornou `HTTPException 404`; a métrica de A contou apenas dados de A; papel institucional tentando a dependência administrativa retornou `HTTPException 403`.
 
-**Limitação restante:** não foi executado um teste HTTP contra um MongoDB/Worker isolado com persistência real. A suíte de integração legada foi coletada no Python 3.12 e resultou em 17 skipped por ausência deliberada de URL/credenciais sintéticas. Nenhum teste foi apontado para produção.
+**Teste HTTP do Worker executado:** Wrangler iniciou o Worker localmente em `127.0.0.1:8798` e o gateway persistente local em `127.0.0.1:8799` gravou os documentos em JSON entre requisições. O gateway implementa o mesmo contrato de operações usado pelo `MongoGateway` (find, insert, update, remove, count, distinct e findOneAndUpdate); não é um mock em memória dentro do teste. A suíte `cloudflare-worker/scripts/phase2-worker-dynamic.mjs` autenticou contas sintéticas e executou **36 asserções aprovadas**. Incluiu dois estudantes, dois profissionais, duas instituições e um administrador; listagens, solicitações, sessões, encaminhamento, feedback, métricas, convite, recuperação de senha, token expirado/reutilizado e tentativa de privilégio foram validados por HTTP.
+
+Resultado observado no Worker: isolamento cruzado retornou listas vazias/`404`; profissional sem privilégio recebeu `403`; senha direta institucional recebeu `422`; convite consumido novamente recebeu `404`; convite expirado recebeu `410`; token de reset reutilizado ou inválido recebeu `400`. O runner registra somente método, caminho redigido e status, sem tokens ou dados pessoais.
 
 ## Convites, recuperação e rate limiting
 
@@ -48,10 +50,19 @@ Os testes dinâmicos em memória executam diretamente os handlers FastAPI Python
 
 ### Worker Cloudflare
 
-O Worker foi iniciado localmente com Wrangler, sem banco e sem deploy. Foram observados: `GET /api` → `200` com `pilot_enabled=false`; cadastro → `503`; `/api/admin/institutions`, `/api/institutions/me/students`, `/api/students/me/requests` e `/api/professionals/me/sessions` sem autenticação → `401`. Testes autenticados de isolamento no Worker permanecem pendentes porque exigem um gateway MongoDB local/sintético; o gateway não foi conectado a Atlas ou produção.
+O Worker foi iniciado localmente com Wrangler e nunca foi publicado. O teste autenticado executou o fluxo HTTP real contra o gateway persistente sintético descrito acima. Em uma segunda execução sem os documentos legais obrigatórios, `GET /api` respondeu `200` com `pilot_enabled=false`, login autenticado respondeu `200` e mutação protegida respondeu `503`, confirmando o bloqueio também para usuários autenticados. O Worker foi testado separadamente do backend Python; nenhum dado foi enviado ao Atlas ou à produção.
+
+## Classificação dos 17 testes legados ignorados
+
+Os 17 casos de `backend/tests/test_acolhe_audit.py` foram coletados no Python 3.12 e ficaram `skipped` porque exigem URL e credenciais de integração. A classificação é:
+
+- **Cobertos por testes sintéticos equivalentes:** isolamento de métricas, RBAC básico, convite inválido/expirado, consumo único de convite/reset, fluxo básico de solicitação e acesso por instituição.
+- **Redundantes para esta fase:** verificações de saúde, autenticação básica e respostas genéricas já cobertas pelas suítes Python e Worker.
+- **Ainda não executados e relevantes:** corrida de aceite atômico/concurrente, corrida de dois estudantes para o mesmo horário, cancelamento concorrente, cenários negativos completos de consentimento, proteção de link de sala e rate limiting HTTP sob carga. Esses casos permanecem pendentes por não haver um MongoDB de teste real/runner de concorrência configurado.
 
 ## Estado operacional
 
 - `pilot_enabled=false` preservado; nenhum deploy foi executado.
 - Branch separada; alterações reversíveis e não publicadas.
 - Nenhum segredo, conta ou dado real foi usado.
+- O ambiente de teste foi encerrado após a execução; os arquivos de persistência locais são artefatos sintéticos e não fazem parte do deploy.

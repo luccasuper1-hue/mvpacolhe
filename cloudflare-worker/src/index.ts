@@ -20,6 +20,9 @@ export interface Env {
   PILOT_CONTROLLER_NAME?: string;
   PILOT_PRIVACY_EMAIL?: string;
   MONGO_GATEWAY: DurableObjectNamespace;
+  TEST_MODE?: string;
+  TEST_SEED_SECRET?: string;
+  TEST_GATEWAY_URL?: string;
 }
 
 function allowedOrigin(request: Request, env: Env) {
