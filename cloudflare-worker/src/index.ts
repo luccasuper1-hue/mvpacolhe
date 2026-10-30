@@ -18,13 +18,15 @@ export interface Env {
   MONGO_GATEWAY: DurableObjectNamespace;
 }
 
-function configuredOrigin(env: Env) {
-  try { return new URL(env.FRONTEND_URL).origin; } catch { return env.FRONTEND_URL.replace(/\/+$/, ""); }
+function configuredOrigin(request: Request, env: Env) {
+  const configured = env.FRONTEND_URL?.trim();
+  if (!configured) return new URL(request.url).origin;
+  try { return new URL(configured).origin; } catch { return configured.replace(/\/+$/, ""); }
 }
 
 function allowedOrigin(request: Request, env: Env) {
   const origin = request.headers.get("origin");
-  return origin === configuredOrigin(env) ? origin : undefined;
+  return origin === configuredOrigin(request, env) ? origin : undefined;
 }
 
 function hasAccessCookie(request: Request) {
@@ -36,7 +38,7 @@ function csrfFailure(request: Request, env: Env) {
   // origin. Bearer-authenticated API clients are unaffected by this browser
   // CSRF guard because they do not automatically attach cookies.
   if (!["POST", "PUT", "PATCH", "DELETE"].includes(request.method) || !hasAccessCookie(request)) return false;
-  return request.headers.get("origin") !== configuredOrigin(env);
+  return request.headers.get("origin") !== configuredOrigin(request, env);
 }
 
 function withCors(response: Response, origin?: string): Response {
