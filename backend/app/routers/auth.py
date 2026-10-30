@@ -105,10 +105,17 @@ async def accept_invite(token: str, payload: InviteAccept, response: Response):
         raise HTTPException(status_code=404, detail="Convite inválido ou já utilizado")
     if user.get("invite_expires_at") and user["invite_expires_at"] < now_iso():
         raise HTTPException(status_code=410, detail="Convite expirado. Peça um novo à instituição.")
+    if not payload.terms_accepted or not payload.privacy_accepted:
+        raise HTTPException(status_code=422, detail="É necessário aceitar os termos e a política de privacidade do piloto")
+    if user.get("role") in ("professional", "institution") and not payload.role_terms_accepted:
+        raise HTTPException(status_code=422, detail="É necessário aceitar o termo específico do seu perfil")
     # Claim the invite in the same write that consumes it. Without the token
     # in this filter, two simultaneous requests could both set a password.
     result = await db.users.update_one({"id": user["id"], "invite_token": token}, {
-        "$set": {"password_hash": hash_password(payload.password), "active": True, "consent_accepted_at": now_iso()},
+        "$set": {"password_hash": hash_password(payload.password), "active": True,
+                  "consent_accepted_at": now_iso(), "terms_accepted_at": now_iso(),
+                  "privacy_accepted_at": now_iso(),
+                  "role_terms_accepted_at": now_iso() if user.get("role") in ("professional", "institution") else None},
         "$unset": {"invite_token": "", "invite_expires_at": ""},
     })
     if result.modified_count != 1:

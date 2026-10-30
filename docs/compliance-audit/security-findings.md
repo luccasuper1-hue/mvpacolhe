@@ -16,9 +16,9 @@ Severidades: P0 crítico, P1 alto, P2 médio, P3 baixo.
 
 O cadastro exige nome/e-mail/aceite do responsável, mas não comprova identidade, autoridade parental ou confirmação independente. É um registro declaratório, não uma verificação.
 
-### P1 — Admin pode criar instituição com senha direta sem aceite específico
+### P1 — Admin podia criar instituição com senha direta sem aceite específico (corrigido na Fase 2)
 
-`POST /api/admin/institutions` pode criar usuário institucional ativo quando recebe `admin_password`; isso contorna o aceite específico do convite.
+O fluxo agora rejeita senha direta e sempre cria conta pendente por convite, com aceite de termos antes da ativação. Ver `phase2-findings.md`.
 
 ### P1 — Política de retenção e expurgo não implementada
 

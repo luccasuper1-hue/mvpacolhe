@@ -39,6 +39,9 @@ class ProfessionalInvite(BaseModel):
 
 class InviteAccept(BaseModel):
     password: str = Field(min_length=8, max_length=128)
+    terms_accepted: bool = False
+    privacy_accepted: bool = False
+    role_terms_accepted: bool = False
 
 
 class AvailabilityInput(BaseModel):

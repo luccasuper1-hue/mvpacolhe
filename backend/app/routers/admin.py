@@ -1,5 +1,7 @@
+import secrets
+from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException
-from ..core import db, require_roles, new_id, now_iso, hash_password, log_event
+from ..core import db, require_roles, new_id, now, now_iso, log_event
 from ..schemas import InstitutionInput
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -37,6 +39,8 @@ async def list_institutions(user: dict = Depends(admin_only)):
 
 @router.post("/institutions", status_code=201)
 async def create_institution(payload: InstitutionInput, user: dict = Depends(admin_only)):
+    if payload.admin_password:
+        raise HTTPException(status_code=422, detail="A conta institucional deve ser ativada exclusivamente por convite")
     code = payload.code.upper().strip()
     if await db.institutions.find_one({"code": code}):
         raise HTTPException(status_code=409, detail="Código de instituição já utilizado")
@@ -48,14 +52,20 @@ async def create_institution(payload: InstitutionInput, user: dict = Depends(adm
         "support_note": None, "created_at": now_iso(),
     }
     await db.institutions.insert_one(dict(institution))
-    if payload.admin_email and payload.admin_password:
+    invite_path = None
+    if payload.admin_email:
+        invite_token = secrets.token_urlsafe(24)
+        invite_path = f"/convite/{invite_token}"
         await db.users.insert_one({
             "id": new_id(), "name": payload.admin_name or payload.name,
-            "email": payload.admin_email.lower(), "password_hash": hash_password(payload.admin_password),
-            "role": "institution", "institution_id": institution["id"], "active": True, "created_at": now_iso(),
+            "email": payload.admin_email.lower(), "password_hash": "",
+            "role": "institution", "institution_id": institution["id"], "active": False,
+            "invite_token": invite_token,
+            "invite_expires_at": (now() + timedelta(days=14)).isoformat(),
+            "created_at": now_iso(),
         })
     await log_event("institution_created", user, institution["id"])
-    return institution
+    return {**institution, "invite_path": invite_path}
 
 
 @router.get("/requests")

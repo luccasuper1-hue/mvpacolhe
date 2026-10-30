@@ -140,7 +140,10 @@ class TestProfessionalInvite:
         assert r.json()["email"] == email
 
         # accept invite with password
-        r = requests.post(f"{API}/auth/invite/{token}/accept", json={"password": "novasenha123"})
+        r = requests.post(f"{API}/auth/invite/{token}/accept", json={
+            "password": "novasenha123", "terms_accepted": True,
+            "privacy_accepted": True, "role_terms_accepted": True,
+        })
         assert r.status_code == 200, r.text
         assert r.json()["access_token"]
 

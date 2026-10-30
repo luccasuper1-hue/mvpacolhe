@@ -10,7 +10,7 @@ export default function AdminArea() {
   const [requests, setRequests] = useState([]);
   const [metrics, setMetrics] = useState(null);
   const [inviteResult, setInviteResult] = useState(null);
-  const [form, setForm] = useState({ name: "", code: "", admin_name: "", admin_email: "", admin_password: "" });
+  const [form, setForm] = useState({ name: "", code: "", admin_name: "", admin_email: "" });
 
   const load = useCallback(async () => {
     const [u, i, r, m] = await Promise.all([
@@ -34,11 +34,10 @@ export default function AdminArea() {
         name: form.name, code: form.code.toUpperCase(),
         admin_name: form.admin_name || null,
         admin_email: form.admin_email || null,
-        admin_password: form.admin_password || null,
       });
       toast.success("Instituição criada.");
       setInviteResult(data.invite_path ? { ...data, url: `${window.location.origin}${data.invite_path}` } : null);
-      setForm({ name: "", code: "", admin_name: "", admin_email: "", admin_password: "" });
+      setForm({ name: "", code: "", admin_name: "", admin_email: "" });
       await load();
     } catch (err) { toast.error(apiError(err)); }
   };
@@ -60,13 +59,13 @@ export default function AdminArea() {
         <MvpKpi label="Conversas realizadas" value={metrics?.sessions_completed} testid="admin-kpi-sessions" />
       </div>
 
-      <MvpCard title="Criar instituição do piloto" subtitle="Opcionalmente cria o acesso do gestor institucional." testid="admin-institution-form">
+      <MvpCard title="Criar instituição do piloto" subtitle="Opcionalmente envia um convite para o gestor institucional." testid="admin-institution-form">
         <form className="mvp-inline-form" onSubmit={createInstitution}>
           <label>Nome<input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} data-testid="admin-inst-name-input" /></label>
           <label>Código<input required value={form.code} onChange={e => setForm({ ...form, code: e.target.value })} data-testid="admin-inst-code-input" /></label>
           <label>Gestor (nome)<input value={form.admin_name} onChange={e => setForm({ ...form, admin_name: e.target.value })} data-testid="admin-inst-manager-input" /></label>
           <label>Gestor (e-mail)<input type="email" value={form.admin_email} onChange={e => setForm({ ...form, admin_email: e.target.value })} data-testid="admin-inst-manager-email-input" /></label>
-          <label>Senha inicial (opcional)<input type="password" minLength={8} placeholder="vazio = enviar convite" value={form.admin_password} onChange={e => setForm({ ...form, admin_password: e.target.value })} data-testid="admin-inst-manager-password-input" /></label>
+          <p className="muted">O gestor receberá um convite para definir a própria senha e aceitar os termos de acesso.</p>
           <button className="button primary" data-testid="admin-create-institution-button">Criar <Building2 size={15} /></button>
         </form>
         {inviteResult && <p className="mvp-ok" style={{ marginTop: 14, wordBreak: "break-all" }} data-testid="admin-invite-result">

@@ -25,3 +25,11 @@ Data: 2026-10-30.
 `pytest -q` na raiz falha na coleta sem `PYTHONPATH=backend` (`ModuleNotFoundError: app`). Com `PYTHONPATH=backend`, os testes são marcados como `skipped` porque exigem URL e credenciais de integração não fornecidas; não foram executados contra produção.
 
 Nenhum teste destrutivo ou alteração em dados reais foi executado.
+
+## Fase 2
+
+- `npm run check` no Worker: passou após as correções de autorização.
+- `npm run build` no frontend: passou; permanece apenas aviso de bundle grande.
+- `python -m compileall -q backend/app backend/tests`: passou.
+- Testes unitários Python de autorização/convite foram adicionados e coletados com sucesso.
+- A execução dos testes assíncronos Python não completou neste ambiente Windows/Python 3.13: `asyncio.run` bloqueia ao criar o event loop Proactor. Não há MongoDB isolado nem credenciais sintéticas de integração disponíveis. Nenhum teste foi executado contra produção.

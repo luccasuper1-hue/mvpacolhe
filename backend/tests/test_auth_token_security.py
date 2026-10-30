@@ -6,6 +6,9 @@ from types import SimpleNamespace
 import pytest
 from fastapi import HTTPException, Response
 
+if hasattr(asyncio, "WindowsSelectorEventLoopPolicy"):
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 # app.core reads these values while importing the router. No MongoDB
 # connection is made in these unit tests; the database collections are faked.
 os.environ.setdefault("MONGO_URL", "mongodb://localhost:27017")
@@ -91,7 +94,7 @@ def test_invite_is_claimed_when_password_is_set(monkeypatch):
     monkeypatch.setattr(auth, "hash_password", lambda password: f"hash:{password}")
     monkeypatch.setattr(auth, "create_access_token", lambda *_args: "access-token")
     monkeypatch.setattr(auth, "log_event", no_event)
-    payload = InviteAccept(password="nova-senha")
+    payload = InviteAccept(password="nova-senha", terms_accepted=True, privacy_accepted=True, role_terms_accepted=True)
 
     result = asyncio.run(auth.accept_invite("invite-token", payload, Response()))
 
@@ -103,8 +106,19 @@ def test_used_invite_cannot_be_accepted_again(monkeypatch):
     database = _InviteDatabase(modified_count=0)
     monkeypatch.setattr(auth, "db", database)
     monkeypatch.setattr(auth, "hash_password", lambda password: f"hash:{password}")
-    payload = InviteAccept(password="nova-senha")
+    payload = InviteAccept(password="nova-senha", terms_accepted=True, privacy_accepted=True, role_terms_accepted=True)
 
     with pytest.raises(HTTPException) as exc:
         asyncio.run(auth.accept_invite("invite-token", payload, Response()))
     assert exc.value.status_code == 404
+
+
+def test_professional_invite_requires_role_terms(monkeypatch):
+    database = _InviteDatabase(modified_count=1)
+    monkeypatch.setattr(auth, "db", database)
+    monkeypatch.setattr(auth, "hash_password", lambda password: f"hash:{password}")
+    payload = InviteAccept(password="nova-senha", terms_accepted=True, privacy_accepted=True)
+
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(auth.accept_invite("invite-token", payload, Response()))
+    assert exc.value.status_code == 422
