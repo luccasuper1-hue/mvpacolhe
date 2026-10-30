@@ -229,7 +229,7 @@ const REVEAL_SELECTORS = ["main .section:not(.hero) > *", "main .section-heading
 function useScrollReveal() {
   const location = useLocation();
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || window.matchMedia("(pointer: coarse)").matches) return;
     const observer = new IntersectionObserver(entries => {
       entries.forEach(entry => {
         if (!entry.isIntersecting) return;
