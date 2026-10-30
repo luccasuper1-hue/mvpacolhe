@@ -23,6 +23,18 @@ function allowedOrigin(request: Request, env: Env) {
   return origin === env.FRONTEND_URL ? origin : undefined;
 }
 
+function hasAccessCookie(request: Request) {
+  return request.headers.get("cookie")?.split(";").some((part) => part.trim().startsWith("access_token=")) ?? false;
+}
+
+function csrfFailure(request: Request, env: Env) {
+  // Cookie-authenticated mutations must come from the configured application
+  // origin. Bearer-authenticated API clients are unaffected by this browser
+  // CSRF guard because they do not automatically attach cookies.
+  if (!["POST", "PUT", "PATCH", "DELETE"].includes(request.method) || !hasAccessCookie(request)) return false;
+  return request.headers.get("origin") !== env.FRONTEND_URL;
+}
+
 function withCors(response: Response, origin?: string): Response {
   const headers = new Headers(response.headers);
   // API responses can carry personal data. Keep them out of intermediary
@@ -56,6 +68,7 @@ export default {
     if (request.method === "OPTIONS") return corsPreflight(request, env);
     const url = new URL(request.url);
     if (!url.pathname.startsWith("/api")) return new Response("Not found", { status: 404 });
+    if (csrfFailure(request, env)) return withCors(Response.json({ detail: "Origem não autorizada" }, { status: 403 }), allowedOrigin(request, env));
     try {
       return withCors(await apiRoute(request, env, url.pathname), allowedOrigin(request, env));
     } catch (error) {
@@ -64,3 +77,4 @@ export default {
     }
   },
 } satisfies ExportedHandler<Env>;
+

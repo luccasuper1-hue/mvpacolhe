@@ -9,8 +9,10 @@ export const json = (body: unknown, status = 200, headers: HeadersInit = {}) => 
 export const fail = (detail: string, status: number) => json({ detail }, status);
 export const db = (env: Env): Mongo => gateway(env);
 export const publicUser = (user: Doc) => ({ id: user.id, name: user.name, email: user.email, role: user.role, institution_id: user.institution_id, active: user.active });
-export const cookie = (token: string) => ({ "set-cookie": `access_token=${token}; HttpOnly; Secure; SameSite=None; Max-Age=604800; Path=/` });
-export const clearCookie = () => ({ "set-cookie": "access_token=; HttpOnly; Secure; SameSite=None; Max-Age=0; Path=/" });
+// The unified deployment serves the app and API from one origin, so Lax
+// prevents cross-site cookie sending while keeping normal navigation intact.
+export const cookie = (token: string) => ({ "set-cookie": `access_token=${token}; HttpOnly; Secure; SameSite=Lax; Max-Age=604800; Path=/` });
+export const clearCookie = () => ({ "set-cookie": "access_token=; HttpOnly; Secure; SameSite=Lax; Max-Age=0; Path=/" });
 
 export async function requestBody(request: Request): Promise<Doc | null> {
   try {
@@ -62,3 +64,4 @@ export async function profile(env: Env, user: Doc): Promise<Doc | Response> {
 
 export function isResponse(value: unknown): value is Response { return value instanceof Response; }
 export function asDoc(value: RecordDoc): Doc { return value as Doc; }
+
