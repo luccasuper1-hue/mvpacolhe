@@ -13,6 +13,7 @@ O piloto atual usa Cloudflare Workers/Assets, MongoDB Atlas e autenticação por
 | Crítica | Textos públicos diziam que nenhum dado era armazenado, embora o piloto grave dados pessoais e operacionais no backend. | Corrigido tecnicamente nesta revisão; o texto ainda precisa de aprovação jurídica. |
 | Alta | O frontend duplicava o JWT em `localStorage`, aumentando o impacto de XSS. | Removido; a sessão web usa o cookie `HttpOnly` emitido pelo Worker. |
 | Alta | Não há fluxo de acesso, correção, eliminação, portabilidade ou revogação de consentimento para titulares. | Pendente de desenho operacional e implementação. |
+| Alta | O titular não tinha uma forma técnica de consultar os dados da própria conta nem registrar um pedido de eliminação. | Parcialmente corrigido: `GET /api/auth/me/export` e `POST /api/auth/me/deletion-request` autenticados; ainda falta operação humana, correção, portabilidade e decisão de retenção. |
 | Alta | O cadastro possui apenas um checkbox do próprio usuário; não verifica idade nem consentimento/participação de responsável. | Pendente; bloquear uso real de menores até definir o processo. |
 | Alta | Não há política de retenção, descarte, backup/restauração ou resposta a incidentes documentada. | Pendente. |
 | Alta | A política pública não identifica claramente controlador, operador, compartilhamentos, finalidades, bases legais e canal do encarregado. | Pendente de decisão jurídica/operacional. |
@@ -31,6 +32,12 @@ O piloto atual usa Cloudflare Workers/Assets, MongoDB Atlas e autenticação por
 6. Definir segregação institucional, acesso mínimo e auditoria de leitura/modificação.
 7. Documentar incidentes, backup, restauração, eliminação e resposta a solicitações oficiais.
 8. Revisar o fluxo com advogado, encarregado e psicólogo responsável antes de qualquer piloto com pessoas reais.
+
+## Fluxo técnico de direitos implementado
+
+- `GET /api/auth/me/export`: devolve os dados da conta e os registros operacionais vinculados ao próprio titular, sem senha, token de convite ou token de recuperação.
+- `POST /api/auth/me/deletion-request` com `{ "confirm": true }`: registra um pedido autenticado em `rights_requests` e retorna um protocolo. A exclusão não é automática: a operação precisa validar retenção, vínculos e eventuais obrigações antes de executar.
+- Ainda faltam canal público, correção de dados, portabilidade em formato definido, prazos internos, responsável e tratamento de exceções.
 
 ## Referências oficiais
 
