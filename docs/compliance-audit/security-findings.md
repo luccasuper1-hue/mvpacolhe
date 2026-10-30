@@ -6,11 +6,11 @@ Severidades: P0 crítico, P1 alto, P2 médio, P3 baixo.
 
 ### P1 — Rate limiting de API incompleto
 
-`cloudflare-worker/src/routes.ts` limita tentativas de login e recuperação por e-mail, mas não há limitador geral para cadastro, convites, solicitações, feedback ou endpoints administrativos. Isso permite abuso, enumeração operacional e aumento de custo.
+`cloudflare-worker/src/index.ts` agora aplica limite de borda por rota/IP para cadastro, reset, aceite de convite, solicitações, feedback, direitos e mutações administrativas; login/reset mantêm também controles persistentes. O limite de borda é por instância e não substitui proteção distribuída do provedor.
 
 ### P1 — Verificação de CRP é apenas declaratória
 
-`institutionRoutes` grava `crp_registration` com `crp_verified: false`, mas não há fluxo administrativo para verificar, aprovar ou bloquear o profissional antes de uso real.
+O Worker e o backend Python agora bloqueiam rotas operacionais de profissionais quando `crp_verified` não é estritamente verdadeiro. A verificação do registro, fonte e revalidação continuam pendentes de processo operacional humano.
 
 ### P1 — Fluxo de menor registra responsável sem verificação de vínculo
 
@@ -30,7 +30,7 @@ Não foram encontrados jobs de expurgo, TTL indexes ou prazos configuráveis par
 
 ### P2 — CSP não evidenciada no Worker
 
-`index.ts` define CORS e no-cache para API, mas não foi encontrado conjunto explícito de headers CSP, HSTS, frame-ancestors e X-Content-Type-Options para assets.
+API e assets agora recebem CSP, `frame-ancestors`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `X-Frame-Options` e `Cache-Control`. HSTS depende da configuração HTTPS/domínio final e não foi ativado localmente.
 
 ### P2 — Convite público revela dados pessoais mínimos
 

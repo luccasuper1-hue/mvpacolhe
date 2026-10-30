@@ -12,7 +12,7 @@ admin_only = require_roles("admin")
 async def list_users(user: dict = Depends(admin_only)):
     users = await db.users.find({}, {"_id": 0, "password_hash": 0}).sort("created_at", -1).to_list(500)
     institutions = {i["id"]: i["name"] for i in await db.institutions.find({}, {"_id": 0}).to_list(200)}
-    return [{**u, "institution_name": institutions.get(u.get("institution_id"))} for u in users]
+    return [{k: v for k, v in {**u, "invite_pending": bool(u.get("invite_token")), "institution_name": institutions.get(u.get("institution_id"))}.items() if k not in {"invite_token", "invite_expires_at"}} for u in users]
 
 
 @router.post("/users/{user_id}/toggle-active")

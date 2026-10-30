@@ -79,3 +79,7 @@ O ambiente não possui `mongod`, Docker ou WSL instalado. Portanto, não foi pos
 - Branch separada; alterações reversíveis e não publicadas.
 - Nenhum segredo, conta ou dado real foi usado.
 - O ambiente de teste foi encerrado após a execução; os arquivos de persistência locais são artefatos sintéticos e não fazem parte do deploy.
+
+## Encerramento formal da Fase 2
+
+A equipe aceitou os resultados como validação técnica no ambiente sintético local. A Fase 2 está encerrada **somente nesse escopo**. Permanecem documentadas como limitações: ausência de MongoDB real, concorrência distribuída entre instâncias, rate limiting sob carga distribuída e os testes legados que não puderam ser executados sem infraestrutura de integração. Essas limitações não representam declaração de conformidade jurídica ou aptidão para atendimento real.

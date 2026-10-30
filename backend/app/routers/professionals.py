@@ -7,7 +7,10 @@ router = APIRouter(prefix="/professionals", tags=["professionals"])
 
 
 async def current_professional(user: dict = Depends(require_roles("professional"))) -> dict:
-    return await profile_of(user)
+    pro = await profile_of(user)
+    if pro.get("crp_verified") is not True:
+        raise HTTPException(status_code=403, detail="Registro profissional ainda não verificado")
+    return pro
 
 
 @router.get("/me")

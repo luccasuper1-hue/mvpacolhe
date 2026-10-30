@@ -65,7 +65,9 @@ async function getStudent(request: Request, env: Env) {
 }
 async function getProfessional(request: Request, env: Env) {
   const user = await userWithRole(request, env, ["professional"]); if (isResponse(user)) return user;
-  const professional = await profile(env, user); return isResponse(professional) ? professional : { user, professional };
+  const professional = await profile(env, user); if (isResponse(professional)) return professional;
+  if (professional.crp_verified !== true) return fail("Registro profissional ainda não verificado", 403);
+  return { user, professional };
 }
 async function getInstitution(request: Request, env: Env) {
   const user = await userWithRole(request, env, ["institution"]); if (isResponse(user)) return user;
@@ -338,7 +340,7 @@ async function adminRoutes(request: Request, env: Env, pathname: string): Promis
   if (!pathname.startsWith("/api/admin/") && pathname !== "/api/metrics/global") return undefined;
   const admin = await userWithRole(request, env, ["admin"]); if (isResponse(admin)) return admin;
   const store = db(env);
-  if (pathname === "/api/admin/users" && request.method === "GET") { const users = await store.findMany("users", {}, { sort: { created_at: -1 }, limit: 500 }), institutions = await store.findMany("institutions", {}, { limit: 200 }), names = new Map(institutions.map((institution) => [institution.id, institution.name])); return json(users.map((user) => { delete user.password_hash; return { ...user, institution_name: names.get(user.institution_id) }; })); }
+  if (pathname === "/api/admin/users" && request.method === "GET") { const users = await store.findMany("users", {}, { sort: { created_at: -1 }, limit: 500 }), institutions = await store.findMany("institutions", {}, { limit: 200 }), names = new Map(institutions.map((institution) => [institution.id, institution.name])); return json(users.map((user) => { const { password_hash: _password, invite_token: _token, invite_expires_at: _expires, ...safeUser } = user; return { ...safeUser, invite_pending: Boolean(user.invite_token), institution_name: names.get(user.institution_id) }; })); }
   const targetId = pathParameter(pathname, "/api/admin/users/", "/toggle-active");
   if (targetId && request.method === "POST") { const target = await store.findOne("users", { id: targetId }); if (!target) return fail("Usuário não encontrado", 404); if (target.role === "admin") return fail("Não é possível desativar um administrador", 403); const active = target.active === false; await store.update("users", { id: targetId }, { $set: { active } }); await logEvent(env, "user_access_toggled", admin, target.institution_id, { target: targetId, active }); return json({ id: targetId, active }); }
   if (pathname === "/api/admin/institutions" && request.method === "GET") { const institutions = await store.findMany("institutions", {}, { limit: 200 }); for (const institution of institutions) { institution.students = await store.count("students", { institution_id: institution.id }); institution.professionals = await store.count("professionals", { institution_id: institution.id }); } return json(institutions); }

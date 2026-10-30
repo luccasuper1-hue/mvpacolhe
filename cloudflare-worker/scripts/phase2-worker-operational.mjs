@@ -30,6 +30,8 @@ const fixture = {
 };
 
 expect(await call("/api/test/seed", { method: "POST", headers: { "x-test-seed-secret": seedSecret }, body: fixture }), 200);
+const apiHealth = await call("/api"); expect(apiHealth, 200); assert.match(apiHealth.response.headers.get("content-security-policy") || "", /script-src 'self'/);
+const assetHealth = await fetch(`${base}/`); assert.match(assetHealth.headers.get("content-security-policy") || "", /frame-ancestors 'none'/);
 const proA = await login("ops-pro-a@example.com", "pro-a-pass-123");
 const proB = await login("ops-pro-b@example.com", "pro-b-pass-123");
 const instA = await login("ops-inst-a@example.com", "inst-a-pass-123");
@@ -48,6 +50,8 @@ const inviteToken = invite.invite_path.split("/convite/")[1];
 const accepts = await Promise.all([1, 2].map(() => call(`/api/auth/invite/${inviteToken}/accept`, { method: "POST", body: { password: "invite-pass-123", terms_accepted: true, privacy_accepted: true, role_terms_accepted: true } })));
 assert.equal(accepts.filter((r) => r.response.status === 200).length, 1, "one invite acceptance must win");
 assert.equal(accepts.filter((r) => r.response.status === 404).length, 1, "reused invite must fail");
+const invitedCookie = accepts.find((r) => r.response.status === 200).cookie;
+expect(await call("/api/professionals/me/availability", { cookie: invitedCookie }), 403);
 
 // 3. Cancellation race: one transition and one conflict.
 const cancelSlot = (await call("/api/professionals/me/availability", { method: "POST", cookie: proA, body: { date: "2099-02-02", times: ["10:00"] } })).json[0];
@@ -84,5 +88,9 @@ const failures = [];
 for (let i = 0; i < 6; i++) failures.push((await call("/api/auth/login", { method: "POST", body: { email: "ops-pro-a@example.com", password: "wrong-password" } })).response.status);
 assert.deepEqual(failures.slice(0, 5), [401, 401, 401, 401, 401]);
 assert.equal(failures[5], 429);
+const resetFailures = [];
+for (let i = 0; i < 11; i++) resetFailures.push((await call("/api/auth/reset-password", { method: "POST", body: { token: "invalid-privacy-token", password: "wrong-reset-pass" } })).response.status);
+assert.deepEqual(resetFailures.slice(0, 10), Array(10).fill(400));
+assert.equal(resetFailures[10], 429);
 
-console.log(JSON.stringify({ ok: true, assertions: 20, results: seen }, null, 2));
+console.log(JSON.stringify({ ok: true, assertions: 24, results: seen }, null, 2));

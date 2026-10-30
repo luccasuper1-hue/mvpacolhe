@@ -24,17 +24,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
     <title>Acolhe — Um primeiro passo para cuidar de você</title>
-    <script>
-      (function () {
-        try {
-          var stored = localStorage.getItem("acolhe-theme") || "system";
-          var dark = stored === "dark" || (stored === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
-          document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
-          document.documentElement.style.colorScheme = dark ? "dark" : "light";
-        } catch (e) {}
-      })();
-    </script>
-    <script>window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault()}},true);</script>
+    <script src="/boot.js"></script>
   </head>
   <body>
     <noscript>Você precisa habilitar JavaScript para usar o Acolhe.</noscript>

@@ -74,6 +74,8 @@ const instBStudents = await call("/api/institutions/me/students", { cookie: inst
 const instBPros = await call("/api/institutions/me/professionals", { cookie: instB, expected: 200 }); assert.equal(instBPros.json.length, 1);
 const instBMetrics = await call("/api/institutions/me/metrics", { cookie: instB, expected: 200 }); assert.equal(instBMetrics.json.requests_total, 0);
 await call("/api/metrics/global", { cookie: admin, expected: 200 });
+const adminUsers = await call("/api/admin/users", { cookie: admin, expected: 200 });
+assert.ok(adminUsers.json.every((entry) => !("password_hash" in entry) && !("invite_token" in entry) && !("invite_expires_at" in entry)));
 
 await call("/api/institutions/me/professionals", { method: "POST", cookie: studentA, body: { name: "Invitado indevido", email: "bad@example.com", crp_registration: "SYN-999" }, expected: 403 });
 const directPassword = await call("/api/admin/institutions", { method: "POST", cookie: admin, body: { name: "Direta", code: "SYN-DIRECT", admin_email: "direct@example.com", admin_password: "direct-pass-123" }, expected: 422 });
