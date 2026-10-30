@@ -7,11 +7,8 @@
 .site-header {
   height: 76px;
   border-bottom: 1px solid rgba(228,222,234,.7);
-  background: rgba(252,251,248,.82);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: var(--paper);
   position: sticky; top: 0; z-index: 20;
-  contain: layout style;
 }
 .nav-wrap { max-width: 1240px; height: 100%; margin: auto; padding: 0 28px; display: flex; align-items: center; gap: 34px; }
 .logo { font-size: 24px; font-weight: 700; letter-spacing: -1px; display: flex; align-items: center; gap: 8px; color: var(--deep); }
