@@ -29,7 +29,9 @@ Não foi encontrada rota que converta `student`, `professional` ou `institution`
 
 Na revisão estática, as rotas de estudante/profissional usam o perfil derivado do token e filtram por `student_id`, `professional_id` e `institution_id`. Rotas institucionais derivam a instituição de `user.institution_id`, sem aceitar um ID de instituição vindo do cliente. Não há vulnerabilidade confirmada por inspeção estática.
 
-**Limitação:** não foi possível executar testes HTTP multiusuário contra um MongoDB/Worker isolado neste ambiente. A suíte de integração exige URL e credenciais sintéticas não fornecidas; nenhum teste foi apontado para produção.
+**Teste dinâmico executado:** `backend/tests/test_phase2_dynamic_isolation.py` criou dois estudantes, dois profissionais e duas instituições sintéticas em um banco em memória e executou os handlers reais. Resultado: 4 passed. Foram observados somente os próprios registros para cada instituição/perfil; o feedback de sessão da outra instituição retornou `HTTPException 404`; a métrica de A contou apenas dados de A; papel institucional tentando a dependência administrativa retornou `HTTPException 403`.
+
+**Limitação restante:** não foi executado um teste HTTP contra um MongoDB/Worker isolado com persistência real. A suíte de integração legada foi coletada no Python 3.12 e resultou em 17 skipped por ausência deliberada de URL/credenciais sintéticas. Nenhum teste foi apontado para produção.
 
 ## Convites, recuperação e rate limiting
 
@@ -37,6 +39,16 @@ Na revisão estática, as rotas de estudante/profissional usam o perfil derivado
 - Login limita cinco falhas por e-mail durante 15 minutos.
 - Recuperação possui resposta genérica, token de uma hora consumido atomicamente e, no Worker, throttle de cinco solicitações por 15 minutos.
 - **Pendente:** não há rate limit geral para cadastro, criação de solicitações, feedback e endpoints administrativos; deve ser tratado antes de exposição ampla.
+
+## Separação dos runtimes
+
+### Backend Python
+
+Os testes dinâmicos em memória executam diretamente os handlers FastAPI Python e cobrem isolamento de instituições, objetos de estudante/profissional, métricas e RBAC. O fluxo de convite/termos e o bloqueio de senha direta também foram exercitados por testes unitários dinâmicos.
+
+### Worker Cloudflare
+
+O Worker foi iniciado localmente com Wrangler, sem banco e sem deploy. Foram observados: `GET /api` → `200` com `pilot_enabled=false`; cadastro → `503`; `/api/admin/institutions`, `/api/institutions/me/students`, `/api/students/me/requests` e `/api/professionals/me/sessions` sem autenticação → `401`. Testes autenticados de isolamento no Worker permanecem pendentes porque exigem um gateway MongoDB local/sintético; o gateway não foi conectado a Atlas ou produção.
 
 ## Estado operacional
 
