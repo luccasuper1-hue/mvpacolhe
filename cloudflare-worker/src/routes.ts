@@ -78,13 +78,15 @@ async function register(request: Request, env: Env) {
   const payload = await requestBody(request); if (!payload) return fail("Corpo JSON inválido", 422);
   const name = string(payload.name), address = email(payload.email), password = payload.password, code = string(payload.institution_code).toUpperCase();
   if (name.length < 2 || name.length > 90 || !address || !validPassword(password) || code.length < 3 || code.length > 40) return fail("Dados de cadastro inválidos", 422);
-  if (payload.age_band !== "adult") return fail("O cadastro de menores exige um fluxo específico com responsável e instituição", 422);
+  if (!oneOf(payload.age_band, ["adult", "minor"])) return fail("Informe a faixa etária", 422);
+  const guardianName = string(payload.guardian_name).trim(), guardianEmail = email(payload.guardian_email);
+  if (payload.age_band === "minor" && (guardianName.length < 2 || guardianName.length > 90 || !guardianEmail || payload.guardian_consent !== true)) return fail("O cadastro de menores exige responsável identificado e aceite explícito", 422);
   if (payload.consent !== true || payload.terms_accepted !== true || payload.privacy_accepted !== true) return fail("É necessário aceitar os termos e a política de privacidade do piloto", 422);
   const store = db(env), institution = await store.findOne("institutions", { code });
   if (!institution) return fail("Código de instituição não encontrado", 404);
   if (await store.findOne("users", { email: address }, { id: 1 })) return fail("Este e-mail já possui conta", 409);
   const acceptedAt = now();
-  const user = { id: id(), name, email: address, password_hash: await hashPassword(password as string), role: "student", institution_id: institution.id, active: true, consent_accepted_at: acceptedAt, terms_accepted_at: acceptedAt, privacy_accepted_at: acceptedAt, legal_version: env.PILOT_LEGAL_VERSION || DEFAULT_LEGAL_VERSION, created_at: acceptedAt };
+  const user = { id: id(), name, email: address, password_hash: await hashPassword(password as string), role: "student", institution_id: institution.id, active: true, age_band: payload.age_band, guardian_name: payload.age_band === "minor" ? guardianName : null, guardian_email: payload.age_band === "minor" ? guardianEmail : null, guardian_consent_at: payload.age_band === "minor" ? acceptedAt : null, consent_accepted_at: acceptedAt, terms_accepted_at: acceptedAt, privacy_accepted_at: acceptedAt, legal_version: env.PILOT_LEGAL_VERSION || DEFAULT_LEGAL_VERSION, created_at: acceptedAt };
   try { await store.insert("users", user); } catch { return fail("Este e-mail já possui conta", 409); }
   await store.insert("students", { id: id(), user_id: user.id, institution_id: institution.id, created_at: now(), last_access: null });
   await logEvent(env, "student_registered", user, institution.id);

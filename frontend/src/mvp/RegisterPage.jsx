@@ -8,9 +8,10 @@ import { apiError } from "./api";
 export default function RegisterPage() {
   const { signUp } = useMvpAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", email: "", password: "", institution_code: "", age_band: "" });
+  const [form, setForm] = useState({ name: "", email: "", password: "", institution_code: "", age_band: "", guardian_name: "", guardian_email: "" });
   const [consent, setConsent] = useState(false);
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [guardianConsent, setGuardianConsent] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const set = k => e => setForm(prev => ({ ...prev, [k]: e.target.value }));
@@ -55,10 +56,16 @@ export default function RegisterPage() {
               <option value="minor">Menor de 18 anos</option>
             </select>
           </label>
+          {form.age_band === "minor" && <div className="mvp-consent" data-testid="register-guardian-box">
+            <p><strong>Cadastro com responsável.</strong> A instituição deve confirmar as regras do piloto antes do uso. Informe o responsável legal para registrar o aceite.</p>
+            <label>Nome do responsável<input required value={form.guardian_name} onChange={set("guardian_name")} data-testid="register-guardian-name-input" /></label>
+            <label>E-mail do responsável<input type="email" required value={form.guardian_email} onChange={set("guardian_email")} data-testid="register-guardian-email-input" /></label>
+            <label className="mvp-check"><input type="checkbox" checked={guardianConsent} onChange={e => setGuardianConsent(e.target.checked)} data-testid="register-guardian-checkbox" /><span>O responsável autorizou a participação no piloto e leu os termos.</span></label>
+          </div>}
           <div className="mvp-consent" data-testid="register-consent-box">
             <p>
-              <ShieldCheck size={14} /> Este fluxo aceita somente pessoas com 18 anos ou mais. O uso por menores exige
-              um fluxo específico com responsável e instituição, que ainda não está habilitado. O Acolhe não realiza diagnóstico automático.
+              <ShieldCheck size={14} /> Adultos e menores podem participar em fluxos diferentes. Menores exigem responsável identificado,
+              aceite específico e acompanhamento da instituição. O Acolhe não realiza diagnóstico automático.
             </p>
             <label className="mvp-check">
               <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} data-testid="register-consent-checkbox" />
@@ -70,7 +77,7 @@ export default function RegisterPage() {
             </label>
           </div>
           {error && <div className="mvp-error" data-testid="register-error">{error}</div>}
-          <button className="button primary full" disabled={busy || !consent || !privacyAccepted || form.age_band !== "adult"} data-testid="register-submit-button">
+          <button className="button primary full" disabled={busy || !consent || !privacyAccepted || !form.age_band || (form.age_band === "minor" && (!guardianConsent || !form.guardian_name || !form.guardian_email))} data-testid="register-submit-button">
             {busy ? "Criando…" : "Criar conta"} <ArrowRight size={16} />
           </button>
         </form>
