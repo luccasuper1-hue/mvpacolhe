@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
-    "build:frontend": "npm --prefix ../frontend run build",
+    "build:frontend": "npm --prefix ../frontend ci && npm --prefix ../frontend run build",
     "check": "tsc --noEmit",
     "indexes": "node scripts/create-indexes.mjs",
     "verify": "npm run check && wrangler deploy --dry-run",
