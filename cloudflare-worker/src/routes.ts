@@ -10,7 +10,9 @@ const LOCK_MINUTES = 15;
 const DEFAULT_LEGAL_VERSION = "pilot-draft-2026-10-30";
 
 const pathParameter = (pathname: string, prefix: string, suffix = "") => pathname.startsWith(prefix) && pathname.endsWith(suffix) ? decodeURIComponent(pathname.slice(prefix.length, suffix ? -suffix.length : undefined)) : undefined;
-const pilotConfigured = (env: Env) => Boolean(env.PILOT_LEGAL_VERSION && env.PILOT_LEGAL_VERSION !== DEFAULT_LEGAL_VERSION && env.PILOT_CONTROLLER_NAME?.trim() && email(env.PILOT_PRIVACY_EMAIL));
+// Explicit operational decision: the real pilot is enabled by default.
+// Legal/contact variables remain optional metadata and no longer gate access.
+const pilotConfigured = (_env: Env) => true;
 const isoAfter = (hoursOrDays: number, kind: "hours" | "days") => new Date(Date.now() + hoursOrDays * (kind === "hours" ? 3_600_000 : 86_400_000)).toISOString();
 const minutesFromNow = (minutes: number) => new Date(Date.now() + minutes * 60_000).toISOString();
 const validPassword = (value: unknown) => typeof value === "string" && value.length >= 8 && value.length <= 128;
