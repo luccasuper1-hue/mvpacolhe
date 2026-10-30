@@ -12,6 +12,8 @@ export default function InvitePage() {
   const [invite, setInvite] = useState(null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -24,7 +26,7 @@ export default function InvitePage() {
     if (password !== confirm) { setError("As senhas não coincidem."); return; }
     setBusy(true); setError("");
     try {
-      await api.post(`/auth/invite/${token}/accept`, { password });
+      await api.post(`/auth/invite/${token}/accept`, { password, terms_accepted: termsAccepted, privacy_accepted: privacyAccepted });
       await refresh();
       navigate("/profissional", { replace: true });
     } catch (err) { setError(apiError(err)); } finally { setBusy(false); }
@@ -50,8 +52,10 @@ export default function InvitePage() {
             <label>Confirmar senha
               <input type="password" required minLength={8} value={confirm} onChange={e => setConfirm(e.target.value)} data-testid="invite-confirm-input" />
             </label>
+            <label className="mvp-check"><input type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} /> <span>Li e aceito os <Link to="/termos">termos do piloto</Link>.</span></label>
+            <label className="mvp-check"><input type="checkbox" checked={privacyAccepted} onChange={e => setPrivacyAccepted(e.target.checked)} /> <span>Li a <Link to="/privacidade">política de privacidade</Link>.</span></label>
             {error && <div className="mvp-error" data-testid="invite-error">{error}</div>}
-            <button className="button primary full" disabled={busy} data-testid="invite-submit-button">
+            <button className="button primary full" disabled={busy || !termsAccepted || !privacyAccepted} data-testid="invite-submit-button">
               {busy ? "Ativando…" : "Ativar minha conta"} <ArrowRight size={16} />
             </button>
           </form>

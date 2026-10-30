@@ -9,7 +9,7 @@ export default function InstitutionArea() {
   const [students, setStudents] = useState([]);
   const [professionals, setProfessionals] = useState([]);
   const [institution, setInstitution] = useState(null);
-  const [invite, setInvite] = useState({ name: "", email: "", link_type: "institution", specialty: "" });
+  const [invite, setInvite] = useState({ name: "", email: "", link_type: "institution", specialty: "", crp_registration: "" });
   const [inviteLink, setInviteLink] = useState(null);
   const [profile, setProfile] = useState({ name: "", contact_email: "", support_note: "" });
 
@@ -32,7 +32,7 @@ export default function InstitutionArea() {
       const { data } = await api.post("/institutions/me/professionals", { ...invite, specialty: invite.specialty || null });
       setInviteLink(`${window.location.origin}${data.invite_path}`);
       toast.success(data.email_sent ? "Convite enviado por e-mail." : "Convite criado.", { description: data.email_sent ? "O profissional receberá o link para definir a própria senha." : "Configure o e-mail ou compartilhe o link exibido abaixo." });
-      setInvite({ name: "", email: "", link_type: "institution", specialty: "" });
+      setInvite({ name: "", email: "", link_type: "institution", specialty: "", crp_registration: "" });
       await load();
     } catch (err) { toast.error(apiError(err)); }
   };
@@ -109,6 +109,7 @@ export default function InstitutionArea() {
             </select>
           </label>
           <label>Atuação (opcional)<input value={invite.specialty} onChange={e => setInvite({ ...invite, specialty: e.target.value })} data-testid="invite-specialty-input" /></label>
+          <label>Registro CRP<input required value={invite.crp_registration} onChange={e => setInvite({ ...invite, crp_registration: e.target.value })} placeholder="Ex.: 00/00000" data-testid="invite-crp-input" /></label>
           <button className="button primary" data-testid="invite-submit-button">Enviar convite <UserPlus size={15} /></button>
         </form>
         {inviteLink && (

@@ -15,6 +15,10 @@ export interface Env {
   /** Optional HTTPS endpoint of the transactional-email adapter for invitations. */
   INVITE_EMAIL_WEBHOOK_URL?: string;
   INVITE_EMAIL_WEBHOOK_TOKEN?: string;
+  /** Versioned pilot documents shown and accepted by users. */
+  PILOT_LEGAL_VERSION?: string;
+  PILOT_CONTROLLER_NAME?: string;
+  PILOT_PRIVACY_EMAIL?: string;
   MONGO_GATEWAY: DurableObjectNamespace;
 }
 

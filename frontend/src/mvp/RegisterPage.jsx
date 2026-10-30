@@ -10,6 +10,7 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: "", email: "", password: "", institution_code: "" });
   const [consent, setConsent] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const set = k => e => setForm(prev => ({ ...prev, [k]: e.target.value }));
@@ -18,7 +19,7 @@ export default function RegisterPage() {
     e.preventDefault();
     setBusy(true); setError("");
     try {
-      await signUp({ ...form, institution_code: form.institution_code.toUpperCase().trim(), consent });
+      await signUp({ ...form, institution_code: form.institution_code.toUpperCase().trim(), consent, terms_accepted: consent, privacy_accepted: privacyAccepted });
       navigate("/aluno", { replace: true });
     } catch (err) {
       setError(apiError(err));
@@ -55,11 +56,15 @@ export default function RegisterPage() {
             </p>
             <label className="mvp-check">
               <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} data-testid="register-consent-checkbox" />
-              <span>Li e aceito participar do piloto nas condições combinadas com a minha instituição.</span>
+              <span>Li e aceito os <Link to="/termos">termos do piloto</Link> e participar nas condições combinadas com a minha instituição.</span>
+            </label>
+            <label className="mvp-check">
+              <input type="checkbox" checked={privacyAccepted} onChange={e => setPrivacyAccepted(e.target.checked)} data-testid="register-privacy-checkbox" />
+              <span>Li a <Link to="/privacidade">política de privacidade</Link> e entendi quais dados são tratados.</span>
             </label>
           </div>
           {error && <div className="mvp-error" data-testid="register-error">{error}</div>}
-          <button className="button primary full" disabled={busy || !consent} data-testid="register-submit-button">
+          <button className="button primary full" disabled={busy || !consent || !privacyAccepted} data-testid="register-submit-button">
             {busy ? "Criando…" : "Criar conta"} <ArrowRight size={16} />
           </button>
         </form>
