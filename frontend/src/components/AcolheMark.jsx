@@ -7,16 +7,23 @@ export default function AcolheMark({ size = "large", parallax = false, label = "
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced) return;
     const el = ref.current;
+    let frame = 0;
+    let lastEvent = null;
     const onMove = e => {
-      const rect = el.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      const dx = (e.clientX - cx) / rect.width;
-      const dy = (e.clientY - cy) / rect.height;
-      el.style.setProperty("--px", `${dx * 8}px`);
-      el.style.setProperty("--py", `${dy * 8}px`);
-      el.style.setProperty("--rx", `${-dy * 4}deg`);
-      el.style.setProperty("--ry", `${dx * 4}deg`);
+      lastEvent = e;
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        const rect = el.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const dx = (lastEvent.clientX - cx) / rect.width;
+        const dy = (lastEvent.clientY - cy) / rect.height;
+        el.style.setProperty("--px", `${dx * 8}px`);
+        el.style.setProperty("--py", `${dy * 8}px`);
+        el.style.setProperty("--rx", `${-dy * 4}deg`);
+        el.style.setProperty("--ry", `${dx * 4}deg`);
+        frame = 0;
+      });
     };
     const onLeave = () => {
       el.style.setProperty("--px", "0px");
@@ -26,7 +33,7 @@ export default function AcolheMark({ size = "large", parallax = false, label = "
     };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseleave", onLeave);
-    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseleave", onLeave); };
+    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseleave", onLeave); if (frame) cancelAnimationFrame(frame); };
   }, [parallax]);
   return (
     <div ref={ref} className={`acolhe-mark acolhe-mark-${size}`} role="img" aria-label={label} data-testid="acolhe-3d-mark">

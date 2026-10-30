@@ -11,6 +11,7 @@
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   position: sticky; top: 0; z-index: 20;
+  contain: layout style;
 }
 .nav-wrap { max-width: 1240px; height: 100%; margin: auto; padding: 0 28px; display: flex; align-items: center; gap: 34px; }
 .logo { font-size: 24px; font-weight: 700; letter-spacing: -1px; display: flex; align-items: center; gap: 8px; color: var(--deep); }
@@ -170,6 +171,7 @@
   transform: rotate(1.6deg);
   box-shadow: var(--shadow-lg);
   overflow: visible;
+  will-change: transform;
 }
 .hero-product::after {
   content: ""; position: absolute; inset: 16px -14px -14px 14px;
@@ -791,6 +793,7 @@ html[data-theme="dark"] .app-demo-banner { background: rgba(240,178,150,.12); co
 
 /* ---------- Responsivo: tablet/mobile ---------- */
 @media (max-width: 850px) {
+  .site-header { background: var(--paper); backdrop-filter: none; -webkit-backdrop-filter: none; }
   .nav-wrap { padding: 0 18px; }
   .nav-links { display: none; position: absolute; top: 76px; left: 0; right: 0; background: #fff; padding: 18px; flex-direction: column; align-items: stretch; gap: 4px; border-bottom: 1px solid var(--line); border-radius: 0 0 24px 24px; box-shadow: var(--shadow-md); }
   .nav-links a { padding: 13px 16px; border-radius: 14px; }
@@ -822,6 +825,7 @@ html[data-theme="dark"] .app-demo-banner { background: rgba(240,178,150,.12); co
     border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow-md);
     justify-content: space-around; padding: 8px;
   }
+  .bottom-nav { background: var(--surface); backdrop-filter: none; -webkit-backdrop-filter: none; }
   .bottom-nav a, .bottom-nav button { display: grid; place-items: center; gap: 3px; color: #9b91a4; font-size: 9px; border: 0; background: transparent; padding: 7px 12px; border-radius: 16px; transition: color var(--t-fast) var(--ease), background-color var(--t-fast) var(--ease); }
   .bottom-nav a:hover, .bottom-nav button:hover { color: var(--deep); background: var(--lavender); }
   .app-main { padding: 44px 20px 60px; }

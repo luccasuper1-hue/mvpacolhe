@@ -69,15 +69,22 @@ function Home() {
     return () => clearInterval(t);
   }, [touched]);
   useEffect(() => {
-    if (reducedMotion() || window.innerWidth < 900) return;
+    if (reducedMotion() || window.innerWidth < 900 || window.matchMedia("(pointer: coarse)").matches) return;
+    let frame = 0;
+    let nextX = 0;
+    let nextY = 0;
     const onMove = e => {
-      const x = e.clientX / window.innerWidth - .5;
-      const y = e.clientY / window.innerHeight - .5;
-      document.documentElement.style.setProperty("--hero-px", `${(x * 5).toFixed(2)}px`);
-      document.documentElement.style.setProperty("--hero-py", `${(y * 5).toFixed(2)}px`);
+      nextX = e.clientX / window.innerWidth - .5;
+      nextY = e.clientY / window.innerHeight - .5;
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        document.documentElement.style.setProperty("--hero-px", `${(nextX * 5).toFixed(2)}px`);
+        document.documentElement.style.setProperty("--hero-py", `${(nextY * 5).toFixed(2)}px`);
+        frame = 0;
+      });
     };
     window.addEventListener("mousemove", onMove);
-    return () => window.removeEventListener("mousemove", onMove);
+    return () => { window.removeEventListener("mousemove", onMove); if (frame) cancelAnimationFrame(frame); };
   }, []);
   const activeOption = touched ? picked : heroOptions[autoIndex];
   const demoStep = (touched ? Math.max(heroOptions.indexOf(picked), 0) : autoIndex) + 1;
