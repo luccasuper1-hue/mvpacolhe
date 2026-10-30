@@ -84,7 +84,7 @@ async function register(request: Request, env: Env) {
   await store.insert("students", { id: id(), user_id: user.id, institution_id: institution.id, created_at: now(), last_access: null });
   await logEvent(env, "student_registered", user, institution.id);
   const accessToken = await createAccessToken({ sub: user.id, email: address, role: "student" }, env.JWT_SECRET);
-  return json({ user: publicUser(user), access_token: accessToken, institution: institution.name }, 200, cookie(accessToken));
+  return json({ user: publicUser(user), institution: institution.name }, 200, cookie(accessToken));
 }
 
 async function login(request: Request, env: Env) {
@@ -109,7 +109,7 @@ async function login(request: Request, env: Env) {
   if (user.role === "professional") await store.update("professionals", { user_id: user.id }, { $set: { last_access: now() } });
   await logEvent(env, "access", user, user.institution_id);
   const accessToken = await createAccessToken({ sub: user.id, email: address, role: user.role }, env.JWT_SECRET);
-  return json({ user: publicUser(user), access_token: accessToken }, 200, cookie(accessToken));
+  return json({ user: publicUser(user) }, 200, cookie(accessToken));
 }
 
 async function authRoutes(request: Request, env: Env, pathname: string): Promise<Response | undefined> {
@@ -140,7 +140,7 @@ async function authRoutes(request: Request, env: Env, pathname: string): Promise
     if (changed !== 1) return fail("Convite inválido ou já utilizado", 404);
     await logEvent(env, "invite_accepted", user, user.institution_id);
     const accessToken = await createAccessToken({ sub: user.id, email: user.email, role: user.role }, env.JWT_SECRET);
-    return json({ user: publicUser({ ...user, active: true }), access_token: accessToken }, 200, cookie(accessToken));
+    return json({ user: publicUser({ ...user, active: true }) }, 200, cookie(accessToken));
   }
   if (pathname === "/api/auth/forgot-password" && request.method === "POST") {
     const payload = await requestBody(request), address = email(payload?.email); if (!address) return fail("E-mail inválido", 422);

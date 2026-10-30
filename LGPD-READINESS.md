@@ -16,7 +16,8 @@ O piloto atual usa Cloudflare Workers/Assets, MongoDB Atlas e autenticação por
 | Alta | O cadastro possui apenas um checkbox do próprio usuário; não verifica idade nem consentimento/participação de responsável. | Pendente; bloquear uso real de menores até definir o processo. |
 | Alta | Não há política de retenção, descarte, backup/restauração ou resposta a incidentes documentada. | Pendente. |
 | Alta | A política pública não identifica claramente controlador, operador, compartilhamentos, finalidades, bases legais e canal do encarregado. | Pendente de decisão jurídica/operacional. |
-| Média | Cookie usa `SameSite=None` para permitir backend separado, mas não existe proteção CSRF explícita para mutações autenticadas. | Pendente; manter o backend separado desativado até revisar a arquitetura. |
+| Alta | Sessões por cookie precisam impedir mutações disparadas por origem externa. | Corrigido nesta revisão: cookie `SameSite=Lax` no deploy unificado e validação de `Origin` para mutações autenticadas. |
+| Média | Respostas de login/registro ainda poderiam devolver o JWT ao JavaScript mesmo usando cookie. | Corrigido nesta revisão: o token fica apenas no cookie HttpOnly; a resposta não o expõe ao frontend. |
 | Média | Não há CSP no frontend estático. | Pendente; precisa ser configurada após confirmar fontes e integrações permitidas. |
 | Média | MongoDB Atlas, Cloudflare e eventual provedor de e-mail não estão descritos como operadores/compartilhamentos. | Pendente de inventário contratual e transferência internacional. |
 
