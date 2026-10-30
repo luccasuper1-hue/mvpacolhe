@@ -1,0 +1,13 @@
+{
+  "environment": "synthetic-demo-only",
+  "pilot_enabled": false,
+  "institution": { "id": "demo-inst-a", "name": "Instituição Demo Acolhe", "code": "DEMO-A" },
+  "accounts": {
+    "student": { "id": "demo-student", "email": "student.demo@example.test", "password": "synthetic-only" },
+    "professional": { "id": "demo-professional", "email": "professional.demo@example.test", "password": "synthetic-only", "crp_verified": true },
+    "institution": { "id": "demo-institution", "email": "institution.demo@example.test", "password": "synthetic-only" },
+    "admin": { "id": "demo-admin", "email": "admin.demo@example.test", "password": "synthetic-only" }
+  },
+  "room_link_provider": "meet.example.test",
+  "note": "Fixture documental; não é credencial válida e não deve ser carregada em produção."
+}
