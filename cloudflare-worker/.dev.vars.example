@@ -9,3 +9,6 @@ PILOT_RETURN_RESET_TOKEN="false"
 # Opcional: adaptador HTTPS que recebe POST com to, subject, text e Authorization Bearer.
 # RESET_EMAIL_WEBHOOK_URL="https://email-adapter.example/send"
 # RESET_EMAIL_WEBHOOK_TOKEN="segredo-do-adaptador"
+# Convites usam estas variáveis ou, por fallback, o mesmo adaptador de reset.
+# INVITE_EMAIL_WEBHOOK_URL="https://email-adapter.example/send"
+# INVITE_EMAIL_WEBHOOK_TOKEN="segredo-do-adaptador"

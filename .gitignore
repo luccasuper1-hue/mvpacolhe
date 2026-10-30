@@ -103,6 +103,8 @@ memory/
 test_reports/
 test_result.md
 frontend/node_modules/.cache/default-development/6.pack
+frontend/node_modules.bak*/
+frontend/node_modules/
 
 # Superseded local build tooling; Vite is the supported frontend build.
 frontend/craco.config.js

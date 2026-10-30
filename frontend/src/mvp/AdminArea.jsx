@@ -9,6 +9,7 @@ export default function AdminArea() {
   const [institutions, setInstitutions] = useState([]);
   const [requests, setRequests] = useState([]);
   const [metrics, setMetrics] = useState(null);
+  const [inviteResult, setInviteResult] = useState(null);
   const [form, setForm] = useState({ name: "", code: "", admin_name: "", admin_email: "", admin_password: "" });
 
   const load = useCallback(async () => {
@@ -29,13 +30,14 @@ export default function AdminArea() {
   const createInstitution = async e => {
     e.preventDefault();
     try {
-      await api.post("/admin/institutions", {
+      const { data } = await api.post("/admin/institutions", {
         name: form.name, code: form.code.toUpperCase(),
         admin_name: form.admin_name || null,
         admin_email: form.admin_email || null,
         admin_password: form.admin_password || null,
       });
       toast.success("Instituição criada.");
+      setInviteResult(data.invite_path ? { ...data, url: `${window.location.origin}${data.invite_path}` } : null);
       setForm({ name: "", code: "", admin_name: "", admin_email: "", admin_password: "" });
       await load();
     } catch (err) { toast.error(apiError(err)); }
@@ -64,9 +66,12 @@ export default function AdminArea() {
           <label>Código<input required value={form.code} onChange={e => setForm({ ...form, code: e.target.value })} data-testid="admin-inst-code-input" /></label>
           <label>Gestor (nome)<input value={form.admin_name} onChange={e => setForm({ ...form, admin_name: e.target.value })} data-testid="admin-inst-manager-input" /></label>
           <label>Gestor (e-mail)<input type="email" value={form.admin_email} onChange={e => setForm({ ...form, admin_email: e.target.value })} data-testid="admin-inst-manager-email-input" /></label>
-          <label>Gestor (senha)<input type="password" minLength={8} value={form.admin_password} onChange={e => setForm({ ...form, admin_password: e.target.value })} data-testid="admin-inst-manager-password-input" /></label>
+          <label>Senha inicial (opcional)<input type="password" minLength={8} placeholder="vazio = enviar convite" value={form.admin_password} onChange={e => setForm({ ...form, admin_password: e.target.value })} data-testid="admin-inst-manager-password-input" /></label>
           <button className="button primary" data-testid="admin-create-institution-button">Criar <Building2 size={15} /></button>
         </form>
+        {inviteResult && <p className="mvp-ok" style={{ marginTop: 14, wordBreak: "break-all" }} data-testid="admin-invite-result">
+          {inviteResult.email_sent ? "Convite enviado por e-mail." : <>Convite criado. Compartilhe este link com o gestor: {inviteResult.url}</>}
+        </p>}
       </MvpCard>
 
       <div className="mvp-grid">

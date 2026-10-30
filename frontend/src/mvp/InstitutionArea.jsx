@@ -31,7 +31,7 @@ export default function InstitutionArea() {
     try {
       const { data } = await api.post("/institutions/me/professionals", { ...invite, specialty: invite.specialty || null });
       setInviteLink(`${window.location.origin}${data.invite_path}`);
-      toast.success("Convite criado.", { description: "O profissional define a própria senha ao abrir o link." });
+      toast.success(data.email_sent ? "Convite enviado por e-mail." : "Convite criado.", { description: data.email_sent ? "O profissional receberá o link para definir a própria senha." : "Configure o e-mail ou compartilhe o link exibido abaixo." });
       setInvite({ name: "", email: "", link_type: "institution", specialty: "" });
       await load();
     } catch (err) { toast.error(apiError(err)); }
@@ -43,6 +43,13 @@ export default function InstitutionArea() {
       await api.put("/institutions/me", { ...profile, contact_email: profile.contact_email || null, support_note: profile.support_note || null });
       toast.success("Informações atualizadas.");
       await load();
+    } catch (err) { toast.error(apiError(err)); }
+  };
+
+  const resendInvite = async id => {
+    try {
+      const { data } = await api.post(`/institutions/me/professionals/${id}/resend-invite`);
+      toast.success(data.email_sent ? "Convite reenviado por e-mail." : "E-mail não configurado.", { description: data.email_sent ? "O profissional receberá um novo link." : "Use o link pendente exibido no painel." });
     } catch (err) { toast.error(apiError(err)); }
   };
 
@@ -119,7 +126,7 @@ export default function InstitutionArea() {
               <div className="mvp-row-main">
                 <strong>{p.name}</strong>
                 <span>{p.link_type === "institution" ? "Da instituição" : "Parceiro Acolhe"} · {p.open_slots} horários abertos · {p.completed_sessions} conversas</span>
-                {p.invite_pending && <span data-testid={`inst-invite-pending-${p.id}`}>Convite pendente: {window.location.origin}{p.invite_path}</span>}
+                {p.invite_pending && <span data-testid={`inst-invite-pending-${p.id}`}>Convite pendente: {window.location.origin}{p.invite_path} <button type="button" className="button small quiet" onClick={() => resendInvite(p.id)}>Reenviar</button></span>}
               </div>
               <span className={`mvp-tag ${p.invite_pending ? "wait" : p.active ? "ok" : "off"}`}>
                 {p.invite_pending ? "Convite pendente" : p.active ? "Ativo" : "Inativo"}
