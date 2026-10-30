@@ -36,6 +36,7 @@ O piloto atual usa Cloudflare Workers/Assets, MongoDB Atlas e autenticação por
 ## Fluxo técnico de direitos implementado
 
 - `GET /api/auth/me/export`: devolve os dados da conta e os registros operacionais vinculados ao próprio titular, sem senha, token de convite ou token de recuperação.
+- `POST /api/auth/me/correction`: permite corrigir nome e e-mail da própria conta, com validação de duplicidade e registro de auditoria.
 - `POST /api/auth/me/deletion-request` com `{ "confirm": true }`: registra um pedido autenticado em `rights_requests` e retorna um protocolo. A exclusão não é automática: a operação precisa validar retenção, vínculos e eventuais obrigações antes de executar.
 - Ainda faltam canal público, correção de dados, portabilidade em formato definido, prazos internos, responsável e tratamento de exceções.
 

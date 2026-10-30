@@ -122,6 +122,25 @@ async function authRoutes(request: Request, env: Env, pathname: string): Promise
     const institution = user.institution_id ? await store.findOne("institutions", { id: user.institution_id }) : null;
     return json({ user: publicUser(user), institution });
   }
+  if (pathname === "/api/auth/me/correction" && request.method === "POST") {
+    const user = await currentUser(request, env); if (isResponse(user)) return user;
+    const payload = await requestBody(request);
+    const name = payload?.name === undefined ? undefined : string(payload.name).trim();
+    const address = payload?.email === undefined ? undefined : email(payload.email);
+    if (name !== undefined && (name.length < 2 || name.length > 90)) return fail("Nome inválido", 422);
+    if (address === undefined && name === undefined) return fail("Informe ao menos um dado para corrigir", 422);
+    if (payload?.email !== undefined && !address) return fail("E-mail inválido", 422);
+    if (address && address !== user.email) {
+      const existing = await store.findOne("users", { email: address, id: { $ne: user.id } }, { id: 1 });
+      if (existing) return fail("Este e-mail já possui conta", 409);
+    }
+    const patch: Doc = {};
+    if (name !== undefined) patch.name = name;
+    if (address !== undefined) patch.email = address;
+    if (Object.keys(patch).length) await store.update("users", { id: user.id }, { $set: patch });
+    await logEvent(env, "data_corrected", { ...user, ...patch }, user.institution_id, { fields: Object.keys(patch) });
+    return json({ ok: true, user: publicUser({ ...user, ...patch }) });
+  }
   if (pathname === "/api/auth/me/export" && request.method === "GET") {
     const user = await currentUser(request, env); if (isResponse(user)) return user;
     const account = { id: user.id, name: user.name, email: user.email, role: user.role, institution_id: user.institution_id, active: user.active, consent_accepted_at: user.consent_accepted_at, created_at: user.created_at };
