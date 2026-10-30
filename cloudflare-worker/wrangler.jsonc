@@ -16,6 +16,6 @@
     ]
   },
   "migrations": [
-    { "tag": "v1", "new_classes": ["MongoGateway"] }
+    { "tag": "v1", "new_sqlite_classes": ["MongoGateway"] }
   ]
 }
