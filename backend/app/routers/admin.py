@@ -2,7 +2,7 @@ import secrets
 from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from ..core import db, require_roles, new_id, now, now_iso, log_event
-from ..schemas import InstitutionInput
+from ..schemas import InstitutionInput, CrpVerificationInput
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 admin_only = require_roles("admin")
@@ -13,6 +13,25 @@ async def list_users(user: dict = Depends(admin_only)):
     users = await db.users.find({}, {"_id": 0, "password_hash": 0}).sort("created_at", -1).to_list(500)
     institutions = {i["id"]: i["name"] for i in await db.institutions.find({}, {"_id": 0}).to_list(200)}
     return [{k: v for k, v in {**u, "invite_pending": bool(u.get("invite_token")), "institution_name": institutions.get(u.get("institution_id"))}.items() if k not in {"invite_token", "invite_expires_at"}} for u in users]
+
+
+@router.post("/professionals/{professional_id}/crp-verification")
+async def verify_crp(professional_id: str, payload: CrpVerificationInput, user: dict = Depends(admin_only)):
+    professional = await db.professionals.find_one({"id": professional_id}, {"_id": 0})
+    if not professional:
+        raise HTTPException(status_code=404, detail="Profissional não encontrado")
+    changed_at = now_iso()
+    await db.professionals.update_one({"id": professional_id}, {"$set": {
+        "crp_verified": payload.verified,
+        "crp_verified_at": changed_at,
+        "crp_verified_by": user["id"],
+        "crp_verification_source": payload.source.strip(),
+    }})
+    await log_event("crp_verification_changed", user, professional.get("institution_id"), {
+        "professional_id": professional_id, "verified": payload.verified, "source": payload.source.strip(),
+    })
+    return {"id": professional_id, "crp_verified": payload.verified, "crp_verified_at": changed_at,
+            "crp_verified_by": user["id"], "crp_verification_source": payload.source.strip()}
 
 
 @router.post("/users/{user_id}/toggle-active")

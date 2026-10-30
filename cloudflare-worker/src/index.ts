@@ -19,6 +19,8 @@ export interface Env {
   PILOT_LEGAL_VERSION?: string;
   PILOT_CONTROLLER_NAME?: string;
   PILOT_PRIVACY_EMAIL?: string;
+  /** Comma-separated HTTPS room-link host allowlist (exact hosts or subdomains). */
+  ROOM_LINK_ALLOWED_HOSTS?: string;
   MONGO_GATEWAY: DurableObjectNamespace;
   ASSETS?: Fetcher;
   TEST_MODE?: string;

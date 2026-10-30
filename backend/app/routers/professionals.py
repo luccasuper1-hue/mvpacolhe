@@ -1,3 +1,5 @@
+import os
+from urllib.parse import urlparse
 from fastapi import APIRouter, Depends, HTTPException
 from pymongo.errors import DuplicateKeyError
 from ..core import db, require_roles, profile_of, new_id, now_iso, log_event
@@ -119,8 +121,15 @@ async def set_room_link(request_id: str, payload: RoomLinkInput, pro: dict = Dep
     session = await db.sessions.find_one({"request_id": request_id}, {"_id": 0})
     if session and session["status"] == "completed":
         raise HTTPException(status_code=409, detail="Conversa já concluída")
-    if not payload.room_link.startswith(("http://", "https://")):
-        raise HTTPException(status_code=422, detail="Informe um link válido (https://...)")
+    try:
+        parsed = urlparse(payload.room_link)
+        allowed = [h.strip().lower().rstrip(".") for h in os.environ.get("ROOM_LINK_ALLOWED_HOSTS", "").split(",") if h.strip()]
+        host = (parsed.hostname or "").lower().rstrip(".")
+        valid = parsed.scheme == "https" and not parsed.username and not parsed.password and not parsed.fragment and bool(allowed) and any(host == item or host.endswith(f".{item}") for item in allowed)
+    except ValueError:
+        valid = False
+    if not valid:
+        raise HTTPException(status_code=422, detail="Informe um link HTTPS de provedor autorizado")
     await db.requests.update_one({"id": request_id}, {"$set": {"room_link": payload.room_link}})
     return {"ok": True, "room_link": payload.room_link}
 

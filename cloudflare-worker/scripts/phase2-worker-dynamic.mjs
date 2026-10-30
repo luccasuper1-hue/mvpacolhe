@@ -76,6 +76,13 @@ const instBMetrics = await call("/api/institutions/me/metrics", { cookie: instB,
 await call("/api/metrics/global", { cookie: admin, expected: 200 });
 const adminUsers = await call("/api/admin/users", { cookie: admin, expected: 200 });
 assert.ok(adminUsers.json.every((entry) => !("password_hash" in entry) && !("invite_token" in entry) && !("invite_expires_at" in entry)));
+await call("/api/admin/professionals/pro-a/crp-verification", { method: "POST", cookie: proA, body: { verified: false, source: "self" }, expected: 403 });
+await call("/api/admin/professionals/pro-a/crp-verification", { method: "POST", cookie: instA, body: { verified: false, source: "institution" }, expected: 403 });
+const crpVerification = await call("/api/admin/professionals/pro-a/crp-verification", { method: "POST", cookie: admin, body: { verified: false, source: "synthetic-registry-check" }, expected: 200 });
+assert.equal(crpVerification.json.crp_verified, false);
+assert.equal(typeof crpVerification.json.crp_verified_at, "string");
+assert.equal(crpVerification.json.crp_verified_by, "admin-1");
+await call("/api/admin/professionals/pro-a/crp-verification", { method: "POST", cookie: admin, body: { verified: true, source: "synthetic-registry-check" }, expected: 200 });
 
 await call("/api/institutions/me/professionals", { method: "POST", cookie: studentA, body: { name: "Invitado indevido", email: "bad@example.com", crp_registration: "SYN-999" }, expected: 403 });
 const directPassword = await call("/api/admin/institutions", { method: "POST", cookie: admin, body: { name: "Direta", code: "SYN-DIRECT", admin_email: "direct@example.com", admin_password: "direct-pass-123" }, expected: 422 });

@@ -59,6 +59,11 @@ class RoomLinkInput(BaseModel):
     room_link: str = Field(min_length=8, max_length=300)
 
 
+class CrpVerificationInput(BaseModel):
+    verified: bool
+    source: str = Field(min_length=3, max_length=160)
+
+
 class ReferralInput(BaseModel):
     status: str = Field(pattern="^(orientacao|encaminhamento_interno|encaminhamento_externo|sem_encaminhamento)$")
     note: Optional[str] = Field(default=None, max_length=400)

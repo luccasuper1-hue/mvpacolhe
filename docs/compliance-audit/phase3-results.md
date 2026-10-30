@@ -7,6 +7,8 @@ Data: 2026-10-30. Nenhum deploy, piloto ou dado real foi utilizado.
 - Mapa técnico de tratamentos, inferências e compartilhamentos.
 - Proposta de retenção sem expurgo automático.
 - Bloqueio de operações de profissionais sem `crp_verified=true` no Worker e no backend Python.
+- Rota administrativa explícita para verificação/revogação de CRP, com fonte, horário, administrador e evento de auditoria.
+- Allowlist configurável de links de sala (`ROOM_LINK_ALLOWED_HOSTS`) aplicada no Worker e no backend, com rejeição de HTTP, userinfo, fragments e hosts look-alike.
 - Rate limiting de borda para cadastro, reset, aceite de convite, solicitações, feedback, direitos e mutações administrativas; login/reset persistentes permanecem ativos.
 - CSP e headers de segurança em API e assets; scripts inline foram movidos para `public/boot.js`.
 - Minutas jurídicas atualizadas apenas para refletir comportamento efetivo, com decisões marcadas como `PENDENTE`.
@@ -15,8 +17,8 @@ Data: 2026-10-30. Nenhum deploy, piloto ou dado real foi utilizado.
 
 - Python privacy/authz: **13 passed**.
 - Python legado: **17 skipped**, sem URL/credenciais de integração.
-- Worker operacional: **24 asserções aprovadas**.
-- Worker autorização/isolamento/minimização: **37 asserções aprovadas**.
+- Worker operacional: **30 asserções aprovadas**.
+- Worker autorização/isolamento/minimização: **41 asserções aprovadas**.
 - Worker com piloto desabilitado: `GET /api` `200`, login `200`, mutação protegida `503`.
 - TypeScript, static checks e frontend build: aprovados.
 - Wrangler dry-run: aprovado sem deploy.
@@ -26,7 +28,7 @@ Data: 2026-10-30. Nenhum deploy, piloto ou dado real foi utilizado.
 - Não há MongoDB real, Docker ou WSL nesta máquina; atomicidade distribuída e carga entre instâncias continuam sem comprovação.
 - Rate limiting de borda é por instância; precisa de proteção distribuída do provedor antes de operação ampla.
 - Verificação de CRP, regras de menores, base legal, controlador/operadores e retenção exigem decisão humana.
-- Links externos de sala ainda aceitam qualquer URL HTTPS; lista de provedores permitidos é decisão pendente.
+- A lista de provedores/domínios de sala continua sendo decisão operacional; sem configuração, links são recusados.
 - Campos livres podem conter dados sensíveis se o usuário ignorar as orientações.
 
 ## Decisão da Fase 3
