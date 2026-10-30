@@ -60,6 +60,19 @@ Os 17 casos de `backend/tests/test_acolhe_audit.py` foram coletados no Python 3.
 - **Redundantes para esta fase:** verificações de saúde, autenticação básica e respostas genéricas já cobertas pelas suítes Python e Worker.
 - **Ainda não executados e relevantes:** corrida de aceite atômico/concurrente, corrida de dois estudantes para o mesmo horário, cancelamento concorrente, cenários negativos completos de consentimento, proteção de link de sala e rate limiting HTTP sob carga. Esses casos permanecem pendentes por não haver um MongoDB de teste real/runner de concorrência configurado.
 
+## Verificações operacionais adicionais
+
+O runner `cloudflare-worker/scripts/phase2-worker-operational.mjs` executou **20 asserções HTTP** em Wrangler local, com dados sintéticos e gateway persistente. O gateway foi ajustado para serializar mutações e retornar a mesma semântica de `modifiedCount`/`findOneAndUpdate` esperada do MongoDB; isso permite testar os filtros atômicos usados pelo Worker, mas não substitui um servidor MongoDB real.
+
+- **Reserva concorrente:** duas requisições para o mesmo horário produziram exatamente um `201` e um `409`.
+- **Aceite concorrente:** duas requisições para o mesmo convite produziram exatamente um `200` e um `404`.
+- **Cancelamento concorrente:** exatamente um `200` e um `409`; a transição é protegida pelo filtro de status.
+- **Links de sala:** pré-aceite `409`, profissional de outra instituição `404`, acesso não autenticado `401`, link disponível somente no registro próprio após aceite, e alteração após conclusão `409`. Não foi observado vazamento para outro estudante.
+- **Consentimentos negativos:** cadastro sem termos ou sem responsável de menor `422`; aceite de convite sem política `422`.
+- **Rate limiting:** após cinco falhas de login, a sexta tentativa retornou `429`.
+
+O ambiente não possui `mongod`, Docker ou WSL instalado. Portanto, não foi possível comprovar com o servidor MongoDB a atomicidade sob concorrência real nem executar carga distribuída. Esses cenários permanecem risco residual operacional, apesar de os filtros atômicos e os testes locais terem passado.
+
 ## Estado operacional
 
 - `pilot_enabled=false` preservado; nenhum deploy foi executado.

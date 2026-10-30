@@ -7,6 +7,14 @@ const file = args.get("--file") || ".wrangler/phase2-gateway.json";
 let state = {};
 try { state = JSON.parse(await fs.readFile(file, "utf8")); } catch { state = {}; }
 const docs = (collection) => state[collection] || (state[collection] = []);
+let mutationQueue = Promise.resolve();
+async function atomicMutation(fn) {
+  const previous = mutationQueue;
+  let release;
+  mutationQueue = new Promise((resolve) => { release = resolve; });
+  await previous;
+  try { return await fn(); } finally { release(); }
+}
 const matches = (doc, filter) => Object.entries(filter || {}).every(([key, expected]) => {
   const actual = doc[key];
   if (expected && typeof expected === "object" && !Array.isArray(expected)) {
@@ -31,14 +39,17 @@ async function handle(body) {
   const list = docs(collection);
   if (op === "findOne") return project(list.find((doc) => matches(doc, filter)) || null, projection);
   if (op === "findMany") { let result = list.filter((doc) => matches(doc, filter)); if (options.sort) { const [[key, direction]] = Object.entries(options.sort); result.sort((a, b) => String(a[key] ?? "").localeCompare(String(b[key] ?? "")) * direction); } return result.slice(0, options.limit ?? result.length).map((doc) => project(doc, options.projection)); }
-  if (op === "insert") { list.push({ ...value }); await save(); return null; }
+  if (op === "insert") return atomicMutation(async () => { list.push({ ...value }); await save(); return null; });
   if (op === "count") return list.filter((doc) => matches(doc, filter)).length;
   if (op === "distinct") return [...new Set(list.filter((doc) => matches(doc, filter)).map((doc) => String(doc[field])).filter(Boolean))];
-  if (op === "remove") { let removed = 0; state[collection] = list.filter((doc) => { if (matches(doc, filter) && (many || removed === 0)) { removed++; return false; } return true; }); await save(); return removed; }
+  if (op === "remove") return atomicMutation(async () => { let removed = 0; state[collection] = list.filter((doc) => { if (matches(doc, filter) && (many || removed === 0)) { removed++; return false; } return true; }); await save(); return removed; });
   if (op === "update" || op === "findOneAndUpdate") {
-    const index = list.findIndex((doc) => matches(doc, filter));
-    if (index < 0) { if (!upsert || op === "findOneAndUpdate") return null; state[collection].push({ ...filter, ...(update.$set || {}) }); await save(); return 1; }
-    const before = project(list[index], projection); const next = { ...list[index], ...(update.$set || {}) }; for (const key of Object.keys(update.$unset || {})) delete next[key]; list[index] = next; await save(); return op === "findOneAndUpdate" ? before : 1;
+    return atomicMutation(async () => {
+      const target = docs(collection);
+      const index = target.findIndex((doc) => matches(doc, filter));
+      if (index < 0) { if (op === "findOneAndUpdate") return null; if (!upsert) return 0; target.push({ ...filter, ...(update.$set || {}) }); await save(); return 1; }
+      const before = project(target[index], projection); const next = { ...target[index], ...(update.$set || {}) }; for (const key of Object.keys(update.$unset || {})) delete next[key]; target[index] = next; await save(); return op === "findOneAndUpdate" ? before : 1;
+    });
   }
   throw new Error(`unsupported operation: ${op}`);
 }

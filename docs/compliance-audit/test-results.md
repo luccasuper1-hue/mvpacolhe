@@ -24,6 +24,19 @@ Wrangler executou o Worker local em `127.0.0.1:8798`. Um gateway HTTP local pers
 - Códigos relevantes: `403` para convite sem privilégio, `422` para senha direta, `404` para objeto de outra instituição e token de convite consumido, `410` para convite expirado, `400` para reset inválido/reutilizado.
 - `phase2-worker-pilot-disabled.mjs`: `/api` `200` com `pilot_enabled=false`, login `200`, mutação autenticada protegida `503`.
 
+### Verificações operacionais
+
+`phase2-worker-operational.mjs`: **20 asserções aprovadas**.
+
+- Reserva concorrente: `201` + `409`.
+- Aceite concorrente de convite: `200` + `404`.
+- Cancelamento concorrente: `200` + `409`.
+- Link de sala: pré-aceite `409`, outro profissional `404`, sem autenticação `401`, pós-conclusão `409`; registro próprio foi o único a receber o link.
+- Consentimentos negativos: cadastro sem termos/sem responsável `422`; convite sem política `422`.
+- Rate limiting: cinco falhas de login `401`, sexta `429`.
+
+O gateway persistente serializa mutações para reproduzir a semântica atômica do contrato Mongo usado pelo Worker. Não há MongoDB, Docker ou WSL disponível nesta máquina; por isso, a atomicidade em servidor Mongo distribuído e carga concorrente real não foram comprovadas.
+
 O runner imprime apenas método, caminho redigido e status; tokens, senhas e dados pessoais não são registrados.
 
 ## Validações de build
@@ -35,8 +48,8 @@ O runner imprime apenas método, caminho redigido e status; tokens, senhas e dad
 
 ## 17 testes legados ignorados
 
-`backend/tests/test_acolhe_audit.py` coletou **17 skipped** por ausência deliberada de URL/credenciais sintéticas. Os cenários equivalentes de isolamento, RBAC, convite e reset foram cobertos pelas suítes acima. Permanecem pendentes os testes de concorrência (aceite/cancelamento/duplo agendamento), negativos completos de consentimento, guard de link de sala e rate limiting HTTP sob carga; não foram executados contra produção.
+`backend/tests/test_acolhe_audit.py` coletou **17 skipped** por ausência deliberada de URL/credenciais sintéticas. Os cenários equivalentes de isolamento, RBAC, convite, reset, concorrência local, consentimentos, links de sala e rate limiting foram cobertos pelas suítes acima. Permanecem pendentes apenas a confirmação em MongoDB real, carga distribuída e cenários de corrida entre processos/instâncias; não foram executados contra produção.
 
 ## Decisão
 
-Os testes críticos de autorização e isolamento no backend Python e no Worker local passaram. A Fase 2 permanece **bloqueada para aprovação final**, pois os cenários legados de concorrência, rate limiting e guard de sala ainda não têm execução dinâmica equivalente. Nenhum risco foi mascarado por deploy ou por dados de produção.
+Os testes críticos de autorização, isolamento e operações locais passaram. A Fase 2 permanece **tecnicamente pendente**, não por falha reproduzida no Worker, mas pela ausência de um MongoDB de testes real para confirmar atomicidade e concorrência entre processos. Os riscos devem seguir para a etapa de preparação operacional/privacidade antes de qualquer piloto real.
