@@ -78,6 +78,7 @@ async function register(request: Request, env: Env) {
   const payload = await requestBody(request); if (!payload) return fail("Corpo JSON inválido", 422);
   const name = string(payload.name), address = email(payload.email), password = payload.password, code = string(payload.institution_code).toUpperCase();
   if (name.length < 2 || name.length > 90 || !address || !validPassword(password) || code.length < 3 || code.length > 40) return fail("Dados de cadastro inválidos", 422);
+  if (payload.age_band !== "adult") return fail("O cadastro de menores exige um fluxo específico com responsável e instituição", 422);
   if (payload.consent !== true || payload.terms_accepted !== true || payload.privacy_accepted !== true) return fail("É necessário aceitar os termos e a política de privacidade do piloto", 422);
   const store = db(env), institution = await store.findOne("institutions", { code });
   if (!institution) return fail("Código de instituição não encontrado", 404);

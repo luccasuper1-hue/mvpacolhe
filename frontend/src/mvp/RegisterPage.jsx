@@ -8,7 +8,7 @@ import { apiError } from "./api";
 export default function RegisterPage() {
   const { signUp } = useMvpAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", email: "", password: "", institution_code: "" });
+  const [form, setForm] = useState({ name: "", email: "", password: "", institution_code: "", age_band: "" });
   const [consent, setConsent] = useState(false);
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [error, setError] = useState("");
@@ -48,11 +48,17 @@ export default function RegisterPage() {
           <label>Código da instituição
             <input required value={form.institution_code} onChange={set("institution_code")} placeholder="Ex.: PILOTO2026" data-testid="register-code-input" />
           </label>
+          <label>Faixa etária
+            <select required value={form.age_band} onChange={set("age_band")} data-testid="register-age-band-select">
+              <option value="">Selecione</option>
+              <option value="adult">18 anos ou mais</option>
+              <option value="minor">Menor de 18 anos</option>
+            </select>
+          </label>
           <div className="mvp-consent" data-testid="register-consent-box">
             <p>
-              <ShieldCheck size={14} /> Este é um <strong>piloto em validação</strong>. Estudantes podem ser menores de idade e
-              informações de apoio são sensíveis: as regras de uso, o consentimento e a participação de responsáveis são
-              definidos com a instituição antes do uso real. O Acolhe não realiza diagnóstico automático.
+              <ShieldCheck size={14} /> Este fluxo aceita somente pessoas com 18 anos ou mais. O uso por menores exige
+              um fluxo específico com responsável e instituição, que ainda não está habilitado. O Acolhe não realiza diagnóstico automático.
             </p>
             <label className="mvp-check">
               <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} data-testid="register-consent-checkbox" />
@@ -64,7 +70,7 @@ export default function RegisterPage() {
             </label>
           </div>
           {error && <div className="mvp-error" data-testid="register-error">{error}</div>}
-          <button className="button primary full" disabled={busy || !consent || !privacyAccepted} data-testid="register-submit-button">
+          <button className="button primary full" disabled={busy || !consent || !privacyAccepted || form.age_band !== "adult"} data-testid="register-submit-button">
             {busy ? "Criando…" : "Criar conta"} <ArrowRight size={16} />
           </button>
         </form>
