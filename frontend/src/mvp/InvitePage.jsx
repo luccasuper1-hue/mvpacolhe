@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import BrandMark from "../components/BrandMark";
-import { api, apiError, saveToken } from "./api";
+import { api, apiError } from "./api";
 import { useMvpAuth } from "./AuthMvp";
 
 export default function InvitePage() {
@@ -24,8 +24,7 @@ export default function InvitePage() {
     if (password !== confirm) { setError("As senhas não coincidem."); return; }
     setBusy(true); setError("");
     try {
-      const { data } = await api.post(`/auth/invite/${token}/accept`, { password });
-      saveToken(data.access_token);
+      await api.post(`/auth/invite/${token}/accept`, { password });
       await refresh();
       navigate("/profissional", { replace: true });
     } catch (err) { setError(apiError(err)); } finally { setBusy(false); }
