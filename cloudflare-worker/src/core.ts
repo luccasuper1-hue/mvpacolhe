@@ -64,3 +64,4 @@ export async function profile(env: Env, user: Doc): Promise<Doc | Response> {
 
 export function isResponse(value: unknown): value is Response { return value instanceof Response; }
 export function asDoc(value: RecordDoc): Doc { return value as Doc; }
+
