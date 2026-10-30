@@ -122,6 +122,47 @@ async function authRoutes(request: Request, env: Env, pathname: string): Promise
     const institution = user.institution_id ? await store.findOne("institutions", { id: user.institution_id }) : null;
     return json({ user: publicUser(user), institution });
   }
+  if (pathname === "/api/auth/me/export" && request.method === "GET") {
+    const user = await currentUser(request, env); if (isResponse(user)) return user;
+    const account = { id: user.id, name: user.name, email: user.email, role: user.role, institution_id: user.institution_id, active: user.active, consent_accepted_at: user.consent_accepted_at, created_at: user.created_at };
+    const institution = user.institution_id ? await store.findOne("institutions", { id: user.institution_id }) : null;
+    const result: Doc = { account, institution };
+    if (user.role === "student") {
+      const student = await store.findOne("students", { user_id: user.id });
+      result.profile = student;
+      if (student) {
+        const requests = await store.findMany("requests", { student_id: student.id }, { limit: 500 });
+        const sessions = await store.findMany("sessions", { student_id: student.id }, { limit: 500 });
+        const feedback = await store.findMany("feedback", { student_id: student.id }, { limit: 500 });
+        const referrals = sessions.length ? await store.findMany("referrals", { session_id: { $in: sessions.map((session) => session.id) } }, { limit: 500 }) : [];
+        result.requests = requests; result.sessions = sessions; result.feedback = feedback; result.referrals = referrals;
+      }
+    } else if (user.role === "professional") {
+      const professional = await store.findOne("professionals", { user_id: user.id });
+      result.profile = professional;
+      if (professional) {
+        result.availability = await store.findMany("availability", { professional_id: professional.id }, { limit: 500 });
+        result.requests = await store.findMany("requests", { professional_id: professional.id }, { projection: { reason_note: 1 }, limit: 500 });
+        const sessions = await store.findMany("sessions", { professional_id: professional.id }, { limit: 500 });
+        result.sessions = sessions; result.referrals = sessions.length ? await store.findMany("referrals", { session_id: { $in: sessions.map((session) => session.id) } }, { limit: 500 }) : [];
+      }
+    } else if (user.role === "institution") {
+      result.profile = user.institution_id ? await store.findOne("institutions", { id: user.institution_id }) : null;
+    }
+    await logEvent(env, "data_exported", user, user.institution_id);
+    return json(result);
+  }
+  if (pathname === "/api/auth/me/deletion-request" && request.method === "POST") {
+    const user = await currentUser(request, env); if (isResponse(user)) return user;
+    const payload = await requestBody(request);
+    if (payload?.confirm !== true) return fail("Confirmação necessária", 422);
+    const pending = await store.findOne("rights_requests", { user_id: user.id, type: "deletion", status: "pending" });
+    if (pending) return json({ ok: true, request_id: pending.id, status: pending.status });
+    const requestRecord = { id: id(), user_id: user.id, institution_id: user.institution_id, type: "deletion", status: "pending", created_at: now() };
+    await store.insert("rights_requests", requestRecord);
+    await logEvent(env, "deletion_requested", user, user.institution_id, { request_id: requestRecord.id });
+    return json({ ok: true, request_id: requestRecord.id, status: requestRecord.status }, 202);
+  }
   const inviteToken = pathParameter(pathname, "/api/auth/invite/");
   if (inviteToken && request.method === "GET") {
     const user = await store.findOne("users", { invite_token: inviteToken });
